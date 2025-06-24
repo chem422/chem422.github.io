@@ -1,5 +1,6 @@
 // ==== FIREBASE CONFIGURATION ====
-    const firebaseConfig = {
+// Replace these with your own Firebase project credentials
+  const firebaseConfig = {
     apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
     authDomain: "chat-room-22335.firebaseapp.com",
     projectId: "chat-room-22335",
@@ -9,26 +10,41 @@
     measurementId: "G-WB5QY60EG6"
   };
 
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let roomCode = "";
-const name = "User" + Math.floor(Math.random() * 1000);
+let userName = "";
 let rainbowInterval = null;
-let usersInRoom = new Set();
+let notificationSoundEnabled = true;
 let hasStartedPong = false;
+
+// Notification sound audio
+const notificationAudio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+
+function playNotificationSound() {
+  if (notificationSoundEnabled) {
+    notificationAudio.play().catch(() => {});
+  }
+}
 
 function generateRoomCode() {
   return Math.random().toString(36).substr(2, 5).toUpperCase();
 }
 
+function getUserName() {
+  const input = document.getElementById("usernameInput").value.trim();
+  return input ? input : "User" + Math.floor(Math.random() * 1000);
+}
+
 function startRoom() {
+  userName = getUserName();
   roomCode = generateRoomCode();
   enterChatRoom(roomCode);
 }
 
 function joinRoom() {
+  userName = getUserName();
   const input = document.getElementById("roomInput").value.trim().toUpperCase();
   if (!input) return alert("Enter a valid room code");
   roomCode = input;
@@ -39,27 +55,51 @@ function enterChatRoom(code) {
   document.getElementById("mainMenu").style.display = "none";
   document.getElementById("chatArea").style.display = "flex";
   document.getElementById("currentRoomCode").innerText = code;
+  document.getElementById("messages").innerHTML = "";
 
   const roomRef = db.ref("rooms/" + code);
+  
   roomRef.on("child_added", (data) => {
     const msg = data.val();
-    usersInRoom.add(msg.name);
     addMessage(msg.name + ": " + msg.text);
+    playNotificationSound();
 
+    // Rainbow mode triggers
     if (msg.text === "brodychem442/haha\\") startRainbowMode();
     if (msg.text === "brodychem442/stop\\") stopRainbowMode();
+
+    // Pong game start trigger (simplified for demo)
     if (msg.text === "brodychem6(<pong>)" && !hasStartedPong) {
       hasStartedPong = true;
-      setTimeout(() => startPongMiniGame(msg.name), 1000);
+      alert("Pong game started! (Feature coming soon!)");
+      // Implement pong game start here
     }
   });
+
+  // Announce user joined
+  roomRef.push({ name: "System", text: `${userName} joined the chat.` });
+}
+
+function leaveRoom() {
+  if (!roomCode) return;
+  const roomRef = db.ref("rooms/" + roomCode);
+  roomRef.push({ name: "System", text: `${userName} left the chat.` });
+
+  roomCode = "";
+  userName = "";
+  hasStartedPong = false;
+  document.getElementById("chatArea").style.display = "none";
+  document.getElementById("mainMenu").style.display = "block";
+  document.getElementById("messages").innerHTML = "";
+  stopRainbowMode();
 }
 
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
   if (!text) return;
-  db.ref("rooms/" + roomCode).push({ name: name, text: text });
+  const roomRef = db.ref("rooms/" + roomCode);
+  roomRef.push({ name: userName, text: text });
   input.value = "";
 }
 
@@ -84,10 +124,50 @@ function startRainbowMode() {
 function stopRainbowMode() {
   clearInterval(rainbowInterval);
   rainbowInterval = null;
-  document.getElementById("chatArea").style.backgroundColor = "";
+  const chatArea = document.getElementById("chatArea");
+  chatArea.style.backgroundColor = "";
 }
 
+// Settings menu toggles
+function toggleSettingsMenu() {
+  const menu = document.getElementById("settingsMenu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function toggleChatSettingsMenu() {
+  const menu = document.getElementById("chatSettingsMenu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+// Settings toggles event listeners
 document.addEventListener("DOMContentLoaded", () => {
+  // Notification sound toggle
+  const notifToggle = document.getElementById("notifSoundToggle");
+  notifToggle.checked = notificationSoundEnabled;
+  notifToggle.addEventListener("change", () => {
+    notificationSoundEnabled = notifToggle.checked;
+  });
+
+  // Music toggle (not implemented here, placeholder)
+  document.getElementById("musicToggle").addEventListener("change", (e) => {
+    if (e.target.checked) {
+      console.log("Music ON (not implemented)");
+    } else {
+      console.log("Music OFF (not implemented)");
+    }
+  });
+
+  // Theme toggle
+  const themeToggle = document.getElementById("themeToggle");
+  themeToggle.addEventListener("change", () => {
+    if (themeToggle.checked) {
+      document.body.classList.add("light-mode");
+    } else {
+      document.body.classList.remove("light-mode");
+    }
+  });
+
+  // Enter key sends message
   document.getElementById("messageInput").addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -109,117 +189,19 @@ function setupSpaceMiniGame() {
     if (clickCount === 1) {
       moon.addEventListener("click", () => {
         startAsteroidDefenseGame();
-      });
+      }, { once: true });
     }
   });
 }
 
-// 🕹️ Pong Game Function
-function startPongMiniGame(starterName) {
-  const canvas = document.getElementById("pongGame");
-  const ctx = canvas.getContext("2d");
-  canvas.style.display = "block";
-
-  let paddle1Y = 100;
-  let paddle2Y = 100;
-  let ballX = 200;
-  let ballY = 150;
-  let ballDX = 3;
-  let ballDY = 2;
-  let score1 = 0;
-  let score2 = 0;
-  const paddleHeight = 50;
-  const paddleWidth = 10;
-
-  let player = usersInRoom.size > 1 && starterName !== name ? 2 : 1;
-
-  let upPressed = false;
-  let downPressed = false;
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowUp" || e.key === "w") upPressed = true;
-    if (e.key === "ArrowDown" || e.key === "s") downPressed = true;
-  });
-  document.addEventListener("keyup", (e) => {
-    if (e.key === "ArrowUp" || e.key === "w") upPressed = false;
-    if (e.key === "ArrowDown" || e.key === "s") downPressed = false;
-  });
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.arc(ballX, ballY, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "lime";
-    ctx.fillRect(10, paddle1Y, paddleWidth, paddleHeight);
-    ctx.fillStyle = "blue";
-    ctx.fillRect(canvas.width - 20, paddle2Y, paddleWidth, paddleHeight);
-
-    ctx.fillStyle = "white";
-    ctx.font = "16px Arial";
-    ctx.fillText(`Score: ${score1} - ${score2}`, 150, 20);
-    ctx.fillText(`You are Player ${player === 1 ? "Green (1)" : "Blue (2)"}`, 100, 290);
-  }
-
-  function update() {
-    ballX += ballDX;
-    ballY += ballDY;
-
-    if (ballY <= 0 || ballY >= canvas.height) ballDY *= -1;
-
-    if (player === 1) {
-      if (upPressed) paddle1Y -= 5;
-      if (downPressed) paddle1Y += 5;
-    } else {
-      if (upPressed) paddle2Y -= 5;
-      if (downPressed) paddle2Y += 5;
-    }
-
-    paddle1Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle1Y));
-    paddle2Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle2Y));
-
-    if (ballX <= 20 && ballY >= paddle1Y && ballY <= paddle1Y + paddleHeight) ballDX *= -1;
-    if (ballX >= canvas.width - 20 && ballY >= paddle2Y && ballY <= paddle2Y + paddleHeight) ballDX *= -1;
-
-    if (ballX < 0) {
-      score2++;
-      resetBall();
-    } else if (ballX > canvas.width) {
-      score1++;
-      resetBall();
-    }
-
-    if (usersInRoom.size === 1) {
-      paddle2Y = ballY - paddleHeight / 2;
-    }
-  }
-
-  function resetBall() {
-    ballX = canvas.width / 2;
-    ballY = canvas.height / 2;
-    ballDX *= -1;
-    ballDY = (Math.random() - 0.5) * 6;
-  }
-
-  setInterval(() => {
-    update();
-    draw();
-  }, 1000 / 60);
-}
-
-// 🚀 Earth Defense Game
 function startAsteroidDefenseGame() {
+  // Clear main content and add canvas for asteroid defense game
+  document.body.innerHTML = "";
   const canvas = document.createElement("canvas");
   canvas.width = 400;
   canvas.height = 300;
   canvas.style.display = "block";
   canvas.style.margin = "20px auto";
-  document.body.innerHTML = "";
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
 
@@ -241,9 +223,11 @@ function startAsteroidDefenseGame() {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Draw Earth (green platform)
     ctx.fillStyle = "#0f0";
     ctx.fillRect(earthX, 280, 80, 10);
 
+    // Draw asteroids
     ctx.fillStyle = "gray";
     asteroids.forEach((a) => {
       ctx.beginPath();
@@ -251,8 +235,10 @@ function startAsteroidDefenseGame() {
       ctx.fill();
     });
 
+    // Draw hearts
     hearts.forEach((h) => drawHeart(h.x, h.y));
 
+    // HUD: Score and Health
     ctx.fillStyle = "white";
     ctx.font = "14px sans-serif";
     ctx.fillText("Score: " + score, 10, 20);
@@ -260,10 +246,11 @@ function startAsteroidDefenseGame() {
   }
 
   function update() {
+    // Randomly add asteroid
     if (Math.random() < 0.02) {
       asteroids.push({ x: Math.random() * 390, y: 0 });
     }
-
+    // Randomly add heart if health < 3
     if (Math.random() < 0.005 && health < 3) {
       hearts.push({ x: Math.random() * 390, y: 0 });
     }
@@ -290,7 +277,7 @@ function startAsteroidDefenseGame() {
     });
 
     if (health <= 0) {
-      alert("Game Over! Score: " + score);
+      alert("Game Over! Your score: " + score);
       location.reload();
     }
   }
