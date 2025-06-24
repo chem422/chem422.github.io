@@ -1,6 +1,5 @@
 // 🔧 INSERT YOUR FIREBASE CONFIG HERE:
-   // 🔧 INSERT YOUR FIREBASE CONFIG HERE:
-    const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
     authDomain: "chat-room-22335.firebaseapp.com",
     projectId: "chat-room-22335",
@@ -14,7 +13,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let roomCode = "";
-const name = "User" + Math.floor(Math.random() * 1000); // Random name
+const name = "User" + Math.floor(Math.random() * 1000); // Random username
+
+let rainbowInterval = null;
 
 function generateRoomCode() {
   return Math.random().toString(36).substr(2, 5).toUpperCase();
@@ -41,6 +42,16 @@ function enterChatRoom(code) {
   roomRef.on("child_added", (data) => {
     const msg = data.val();
     addMessage(msg.name + ": " + msg.text);
+
+    // Trigger rainbow mode start
+    if (msg.text === "brodychem442/haha\\") {
+      startRainbowMode();
+    }
+
+    // Trigger rainbow mode stop
+    if (msg.text === "brodychem442/stop\\") {
+      stopRainbowMode();
+    }
   });
 }
 
@@ -63,6 +74,26 @@ function addMessage(message) {
   msgEl.textContent = message;
   messagesDiv.appendChild(msgEl);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Rainbow mode functions
+function startRainbowMode() {
+  if (rainbowInterval) return; // Already running
+
+  const chatArea = document.getElementById("chatArea");
+  let hue = 0;
+
+  rainbowInterval = setInterval(() => {
+    hue = (hue + 5) % 360;
+    chatArea.style.backgroundColor = `hsl(${hue}, 100%, 75%)`;
+  }, 100); // update every 100 ms
+}
+
+function stopRainbowMode() {
+  clearInterval(rainbowInterval);
+  rainbowInterval = null;
+  const chatArea = document.getElementById("chatArea");
+  chatArea.style.backgroundColor = ""; // reset background
 }
 
 // Press Enter to send, Shift+Enter for newline
