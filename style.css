@@ -38,12 +38,12 @@ body {
   height: 100px;
   border-radius: 50%;
   position: absolute;
-  background: radial-gradient(#00f, #003);
   z-index: 1;
 }
 
 .planet#earth {
   left: 20%; top: 40%;
+  background: radial-gradient(#00f, #003);
 }
 
 .planet#moon {
@@ -72,6 +72,10 @@ button {
   background: #444;
   color: white;
   cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition: background 0.3s;
 }
 
 button:hover {
@@ -97,7 +101,7 @@ button:hover {
 }
 
 textarea {
-  width: 100%;
+  width: calc(100% - 80px);
   padding: 10px;
   font-size: 16px;
   resize: vertical;
@@ -106,6 +110,13 @@ textarea {
   color: #fff;
   border: none;
   border-radius: 8px;
+}
+
+#sendContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
 }
 
 .overlay {
@@ -119,17 +130,36 @@ textarea {
   color: white;
 }
 
-.light-mode body {
-  background: #eee;
-  color: #000;
+.message.rainbow {
+  animation: rainbowText 2s linear infinite;
+  font-weight: bold;
 }
 
-.light-mode .chat-messages {
-  background: #fff;
-  color: #000;
+@keyframes rainbowText {
+  0% { color: red; }
+  16% { color: orange; }
+  32% { color: yellow; }
+  48% { color: green; }
+  64% { color: blue; }
+  80% { color: indigo; }
+  100% { color: violet; }
 }
 
-.light-mode textarea {
-  background: #ddd;
-  color: #000;
+#fileUploadPopup {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border: 2px dashed #666;
+  padding: 30px;
+  border-radius: 10px;
+  color: white;
+  z-index: 20;
+  display: none;
+  text-align: center;
+}
+
+#fileUploadPopup.active {
+  display: block;
 }
