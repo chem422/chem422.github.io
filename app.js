@@ -1,6 +1,6 @@
 // ==== FIREBASE CONFIGURATION ====
 // Replace the following config with your Firebase project config
- const firebaseConfig = {
+    const firebaseConfig = {
     apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
     authDomain: "chat-room-22335.firebaseapp.com",
     projectId: "chat-room-22335",
@@ -10,7 +10,6 @@
     measurementId: "G-WB5QY60EG6"
   };
 
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -18,6 +17,7 @@ let roomCode = "";
 const name = "User" + Math.floor(Math.random() * 1000);
 let rainbowInterval = null;
 let usersInRoom = new Set();
+let hasStartedPong = false;
 
 function generateRoomCode() {
   return Math.random().toString(36).substr(2, 5).toUpperCase();
@@ -48,8 +48,9 @@ function enterChatRoom(code) {
 
     if (msg.text === "brodychem442/haha\\") startRainbowMode();
     if (msg.text === "brodychem442/stop\\") stopRainbowMode();
-    if (msg.text === "brodychem6(<pong>)") {
-      startPongMiniGame(msg.name);
+    if (msg.text === "brodychem6(<pong>)" && !hasStartedPong) {
+      hasStartedPong = true;
+      setTimeout(() => startPongMiniGame(msg.name), 1000);
     }
   });
 }
@@ -88,130 +89,127 @@ function stopRainbowMode() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  document
-    .getElementById("messageInput")
-    .addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
+  document.getElementById("messageInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  setupSpaceMiniGame();
 });
 
-// ======= PONG GAME =======
-function startPongMiniGame(starterName) {
-  const canvas = document.getElementById("pongGame");
-  const ctx = canvas.getContext("2d");
-  canvas.style.display = "block";
+function setupSpaceMiniGame() {
+  let clickCount = 0;
+  const earth = document.getElementById("earth");
+  const moon = document.getElementById("moon");
+  if (!earth || !moon) return;
 
-  const players = Array.from(usersInRoom);
-  let opponentName = "AI Bot";
-  let isAI = true;
-
-  if (players.length > 1) {
-    const otherPlayers = players.filter((p) => p !== starterName);
-    if (otherPlayers.length > 0) {
-      opponentName = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-      isAI = false;
+  earth.addEventListener("dblclick", () => {
+    clickCount++;
+    if (clickCount === 1) {
+      moon.addEventListener("click", () => {
+        startAsteroidDefenseGame();
+      });
     }
+  });
+}
+
+function startAsteroidDefenseGame() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 400;
+  canvas.height = 300;
+  canvas.style.display = "block";
+  canvas.style.margin = "20px auto";
+  document.body.innerHTML = "";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+
+  let earthX = 160;
+  let health = 3;
+  let score = 0;
+  let asteroids = [];
+  let hearts = [];
+
+  function drawHeart(x, y) {
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
   }
-
-  addMessage(
-    `🏓 ${starterName} vs ${opponentName} — Pong begins! First to 10 wins.`
-  );
-
-  let paddle1Y = 100,
-    paddle2Y = 100;
-  let ballX = 200,
-    ballY = 150;
-  let ballVX = 2,
-    ballVY = 2;
-  let score1 = 0,
-    score2 = 0;
-
-  const hud = document.createElement("div");
-  hud.id = "pongScoreHUD";
-  hud.style.position = "absolute";
-  hud.style.top = "10px";
-  hud.style.left = "50%";
-  hud.style.transform = "translateX(-50%)";
-  hud.style.color = "white";
-  hud.style.fontSize = "18px";
-  hud.style.fontWeight = "bold";
-  hud.style.background = "rgba(0,0,0,0.6)";
-  hud.style.padding = "8px 20px";
-  hud.style.borderRadius = "10px";
-  hud.innerText = `${starterName}: 0 | ${opponentName}: 0`;
-  document.body.appendChild(hud);
-
-  const hitSound = new Audio(
-    "https://freesound.org/data/previews/26/26575_39389-lq.mp3"
-  );
 
   function draw() {
-    ctx.clearRect(0, 0, 400, 300);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(10, paddle1Y, 10, 60);
-    ctx.fillRect(380, paddle2Y, 10, 60);
-    ctx.beginPath();
-    ctx.arc(ballX, ballY, 8, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ballX += ballVX;
-    ballY += ballVY;
+    // Draw Earth
+    ctx.fillStyle = "#0f0";
+    ctx.fillRect(earthX, 280, 80, 10);
 
-    if (ballY <= 0 || ballY >= 300) ballVY *= -1;
+    // Draw Asteroids
+    ctx.fillStyle = "gray";
+    asteroids.forEach((a) => {
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
-    if (ballX <= 20 && ballY >= paddle1Y && ballY <= paddle1Y + 60) {
-      ballVX *= -1;
-      hitSound.play();
-    }
-    if (ballX >= 380 && ballY >= paddle2Y && ballY <= paddle2Y + 60) {
-      ballVX *= -1;
-      hitSound.play();
-    }
+    // Draw Hearts
+    hearts.forEach((h) => drawHeart(h.x, h.y));
 
-    if (ballX < 0) {
-      score2++;
-      updateScore();
-      resetBall();
-    }
-    if (ballX > 400) {
-      score1++;
-      updateScore();
-      resetBall();
-    }
-
-    if (score1 >= 10 || score2 >= 10) {
-      addMessage(
-        `🏁 Game Over! Winner: ${score1 > score2 ? starterName : opponentName}`
-      );
-      clearInterval(gameLoop);
-      canvas.style.display = "none";
-      document.body.removeChild(hud);
-    }
-
-    if (isAI) {
-      if (paddle2Y + 30 < ballY) paddle2Y += 2;
-      else if (paddle2Y + 30 > ballY) paddle2Y -= 2;
-    }
+    // HUD
+    ctx.fillStyle = "white";
+    ctx.font = "14px sans-serif";
+    ctx.fillText("Score: " + score, 10, 20);
+    ctx.fillText("Health: " + "❤".repeat(health), 300, 20);
   }
 
-  function resetBall() {
-    ballX = 200;
-    ballY = 150;
-    ballVX = -ballVX;
-    ballVY = Math.random() > 0.5 ? 2 : -2;
-  }
+  function update() {
+    if (Math.random() < 0.02) {
+      asteroids.push({ x: Math.random() * 390, y: 0 });
+    }
 
-  function updateScore() {
-    hud.innerText = `${starterName}: ${score1} | ${opponentName}: ${score2}`;
+    if (Math.random() < 0.005 && health < 3) {
+      hearts.push({ x: Math.random() * 390, y: 0 });
+    }
+
+    asteroids.forEach((a, i) => {
+      a.y += 3;
+      if (a.y > 280 && a.x > earthX && a.x < earthX + 80) {
+        health--;
+        asteroids.splice(i, 1);
+      } else if (a.y > 300) {
+        score++;
+        asteroids.splice(i, 1);
+      }
+    });
+
+    hearts.forEach((h, i) => {
+      h.y += 2;
+      if (h.y > 280 && h.x > earthX && h.x < earthX + 80) {
+        if (health < 3) health++;
+        hearts.splice(i, 1);
+      } else if (h.y > 300) {
+        hearts.splice(i, 1);
+      }
+    });
+
+    if (health <= 0) {
+      alert("Game Over! Score: " + score);
+      location.reload();
+    }
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "w" || e.key === "ArrowUp") paddle1Y -= 10;
-    if (e.key === "s" || e.key === "ArrowDown") paddle1Y += 10;
+    if (e.key === "a" || e.key === "ArrowLeft") earthX -= 15;
+    if (e.key === "d" || e.key === "ArrowRight") earthX += 15;
+    if (earthX < 0) earthX = 0;
+    if (earthX > 320) earthX = 320;
   });
 
-  const gameLoop = setInterval(draw, 16);
+  setInterval(() => {
+    update();
+    draw();
+  }, 1000 / 60);
 }
