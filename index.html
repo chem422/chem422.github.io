@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chem Chat 1.8</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -29,7 +29,7 @@
 <!-- 🔧 Settings Menu (Main) -->
 <div id="settingsMenu" class="overlay hidden">
   <h3>Settings</h3>
-  <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label><br>
+  <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label><br />
   <button onclick="toggleSettingsMenu()">Close</button>
 </div>
 
@@ -53,12 +53,12 @@
   <!-- 🔧 Settings Menu (Chat) -->
   <div id="chatSettingsMenu" class="overlay hidden">
     <h3>Chat Settings</h3>
-    <label><input type="checkbox" id="chatNotifToggle" checked /> Notification Sound</label><br>
+    <label><input type="checkbox" id="chatNotifToggle" checked /> Notification Sound</label><br />
     <button onclick="toggleChatSettingsMenu()">Close</button>
   </div>
 </div>
 
-<!-- 🛸 Rickroll Fly -->
+<!-- 🛸 Rickroll Fly Container -->
 <div id="rickrollFlyContainer"></div>
 
 <!-- 📂 File Upload GUI -->
@@ -73,7 +73,7 @@
 <!-- 🕹️ Pong Game Canvas -->
 <canvas id="pongCanvas" width="400" height="300" class="hidden"></canvas>
 
-<!-- 🚀 Scripts -->
+<!-- Firebase and App Script -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="app.js"></script>
