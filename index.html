@@ -1,35 +1,26 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat Universe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chem Chat 1.6</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
   <div id="mainMenu" class="screen visible">
     <div class="background">
-      <div class="planet" id="earth"></div>
-      <div class="planet" id="moon"></div>
+      <div id="earth" class="planet"></div>
+      <div id="moon" class="planet"></div>
     </div>
     <div class="menu-box">
-      <h1>Chat Universe</h1>
-      <input id="usernameInput" type="text" placeholder="Enter your username" />
-      <input id="roomInput" type="text" placeholder="Room code to join" />
-      <button onclick="startRoom()">Create Room</button>
+      <h1>Chem Chat 1.6</h1>
+      <input id="usernameInput" placeholder="Enter your username"/>
+      <input id="roomInput" placeholder="Enter room code or leave blank"/>
+      <button onclick="startRoom()">Start Room</button>
       <button onclick="joinRoom()">Join Room</button>
+      <br />
       <button onclick="toggleSettingsMenu()">Settings</button>
     </div>
-  </div>
-
-  <div id="settingsMenu" class="overlay hidden">
-    <h2>Settings</h2>
-    <label><input type="checkbox" id="musicToggle" /> Background Music</label><br />
-    <label><input type="checkbox" id="themeToggle" /> Light Theme</label><br />
-    <button onclick="toggleSettingsMenu()">Close</button>
   </div>
 
   <div id="chatArea" class="screen hidden">
@@ -40,15 +31,38 @@
         <button onclick="toggleChatSettingsMenu()">Settings</button>
       </div>
     </div>
-    <div id="chatSettingsMenu" class="overlay hidden">
-      <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label><br />
-      <button onclick="toggleChatSettingsMenu()">Close</button>
+    <div class="chat-messages" id="messages"></div>
+    <div id="sendContainer">
+      <textarea id="messageInput" placeholder="Type message..."></textarea>
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="showFileUpload()">+ Add</button>
     </div>
-    <div id="messages" class="chat-messages"></div>
-    <textarea id="messageInput" placeholder="Type a message..."></textarea>
-    <button onclick="sendMessage()">Send</button>
   </div>
 
+  <!-- Upload Popup -->
+  <div id="fileUploadPopup">
+    <p>Upload a file (drag and drop a .txt file)</p>
+    <input type="file" accept=".txt" onchange="handleFileUpload(event)"/>
+    <br/><br/>
+    <button onclick="hideFileUpload()">Close</button>
+  </div>
+
+  <!-- Settings Menus -->
+  <div id="settingsMenu" class="overlay hidden">
+    <h3>Settings</h3>
+    <label><input type="checkbox" id="musicToggle" checked/> Background Music</label><br/>
+    <label><input type="checkbox" id="notifSoundToggle" checked/> Message Notification</label><br/><br/>
+    <button onclick="toggleSettingsMenu()">Close</button>
+  </div>
+
+  <div id="chatSettingsMenu" class="overlay hidden">
+    <h3>Chat Settings</h3>
+    <label><input type="checkbox" id="notifSoundToggleChat" checked/> Message Notification</label><br/><br/>
+    <button onclick="toggleChatSettingsMenu()">Close</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
