@@ -2,30 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>Chem Chat 1.9</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chem Chat 1.8</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- 🚀 Start Animation Container -->
-<div id="startAnimation" class="start-animation visible">
-  <canvas id="rocketCanvas"></canvas>
-</div>
-
 <!-- 🌌 Background Planets -->
 <div class="background">
-  <div id="earth" class="planet" tabindex="0" aria-label="Earth"></div>
-  <div id="moon" class="planet" tabindex="0" aria-label="Moon"></div>
+  <div id="earth" class="planet"></div>
+  <div id="moon" class="planet"></div>
 </div>
 
 <!-- 🌟 Main Menu -->
 <div id="mainMenu" class="screen visible">
   <div class="menu-box">
-    <h1>Chem Chat 1.9</h1>
-    <input id="usernameInput" placeholder="Enter your name..." autocomplete="off" />
+    <h1>Chem Chat 1.8</h1>
+    <input id="usernameInput" placeholder="Enter your name..." />
     <button onclick="startRoom()">Start New Room</button>
-    <input id="roomInput" placeholder="Enter Room Code..." autocomplete="off" />
+    <input id="roomInput" placeholder="Enter Room Code..." />
     <button onclick="joinRoom()">Join Room</button>
     <button onclick="toggleSettingsMenu()">⚙️ Settings</button>
   </div>
@@ -39,7 +34,7 @@
 </div>
 
 <!-- 💬 Chat Area -->
-<div id="chatArea" class="screen hidden" role="region" aria-live="polite" aria-label="Chat area">
+<div id="chatArea" class="screen hidden">
   <div class="chat-header">
     <div>
       <button onclick="leaveRoom()">← Back</button>
@@ -48,12 +43,11 @@
     <div>Room: <span id="currentRoomCode"></span></div>
   </div>
 
-  <div id="messages" class="chat-messages" tabindex="0"></div>
+  <div id="messages" class="chat-messages"></div>
 
   <div class="chat-input">
-    <textarea id="messageInput" placeholder="Type your message..." aria-label="Message input"></textarea>
+    <textarea id="messageInput" placeholder="Type your message..."></textarea>
     <button onclick="openFileUpload()">+ Add</button>
-    <button onclick="sendMessage()">Send</button>
   </div>
 
   <!-- 🔧 Settings Menu (Chat) -->
@@ -64,29 +58,24 @@
   </div>
 </div>
 
+<!-- 🛸 Rickroll Fly -->
+<div id="rickrollFlyContainer"></div>
+
 <!-- 📂 File Upload GUI -->
-<div id="fileUploadOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="fileUploadTitle">
-  <h3 id="fileUploadTitle">Upload a File</h3>
+<div id="fileUploadOverlay" class="overlay hidden">
+  <h3>Upload a File</h3>
   <p>Only .txt files allowed. Drag & drop or select manually.</p>
   <input type="file" id="fileInput" accept=".txt" />
   <button onclick="uploadSelectedFile()">Upload</button>
   <button onclick="closeFileUpload()">Cancel</button>
 </div>
 
-<!-- 📥 File Download Link Container -->
-<div id="fileDownloadContainer" class="overlay hidden" role="alert" aria-live="assertive">
-  <p>File uploaded! Click below to download:</p>
-  <a id="fileDownloadLink" href="#" download="">Download File</a>
-  <button onclick="closeFileDownload()">Close</button>
-</div>
-
 <!-- 🕹️ Pong Game Canvas -->
-<canvas id="pongCanvas" width="400" height="300" class="hidden" aria-label="Pong game"></canvas>
+<canvas id="pongCanvas" width="400" height="300" class="hidden"></canvas>
 
 <!-- 🚀 Scripts -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="app.js"></script>
-
 </body>
 </html>
