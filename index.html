@@ -1,55 +1,54 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Realtime Chat Room</title>
-<meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="style.css" />
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Universe</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-<div class="container">
-
-  <div id="mainMenu">
-    <h2>Chat Room</h2>
-
-    <div class="space-background">
-      <img src="https://i.ibb.co/4tLVzMY/earth.png" alt="Earth" class="planet earth" id="earth" />
-      <img src="https://i.ibb.co/SxtZzZP/moon.png" alt="Moon" class="planet moon" id="moon" />
+  <div id="mainMenu" class="screen visible">
+    <div class="background">
+      <div class="planet" id="earth"></div>
+      <div class="planet" id="moon"></div>
     </div>
-
-    <input id="usernameInput" placeholder="Enter your username" maxlength="20" />
-    <button onclick="startRoom()">Start New Room</button>
-    <input id="roomInput" placeholder="Enter Room Code" />
-    <button onclick="joinRoom()">Join Room</button>
-
-    <button id="settingsBtn" onclick="toggleSettingsMenu()">Settings</button>
-    <div id="settingsMenu" class="popup-content">
-      <label><input type="checkbox" id="musicToggle" /> Enable Background Music</label>
-      <label><input type="checkbox" id="themeToggle" /> Light Mode</label>
+    <div class="menu-box">
+      <h1>Chat Universe</h1>
+      <input id="usernameInput" type="text" placeholder="Enter your username" />
+      <input id="roomInput" type="text" placeholder="Room code to join" />
+      <button onclick="startRoom()">Create Room</button>
+      <button onclick="joinRoom()">Join Room</button>
+      <button onclick="toggleSettingsMenu()">Settings</button>
     </div>
   </div>
 
-  <div id="chatArea">
-    <div id="chatControls">
-      <button id="backBtn" onclick="leaveRoom()">Back</button>
-      <button id="chatSettingsBtn" onclick="toggleChatSettingsMenu()">Settings</button>
-    </div>
+  <div id="settingsMenu" class="overlay hidden">
+    <h2>Settings</h2>
+    <label><input type="checkbox" id="musicToggle" /> Background Music</label><br />
+    <label><input type="checkbox" id="themeToggle" /> Light Theme</label><br />
+    <button onclick="toggleSettingsMenu()">Close</button>
+  </div>
 
-    <div id="chatSettingsMenu" class="popup-content" style="display:none;">
-      <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label>
+  <div id="chatArea" class="screen hidden">
+    <div class="chat-header">
+      <span>Room: <span id="currentRoomCode"></span></span>
+      <div>
+        <button onclick="leaveRoom()">Back</button>
+        <button onclick="toggleChatSettingsMenu()">Settings</button>
+      </div>
     </div>
-
-    <h3>Room Code: <span id="currentRoomCode"></span></h3>
-    <div id="messages"></div>
-    <textarea id="messageInput" placeholder="Type message..." rows="3" style="resize: vertical;"></textarea>
+    <div id="chatSettingsMenu" class="overlay hidden">
+      <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label><br />
+      <button onclick="toggleChatSettingsMenu()">Close</button>
+    </div>
+    <div id="messages" class="chat-messages"></div>
+    <textarea id="messageInput" placeholder="Type a message..."></textarea>
     <button onclick="sendMessage()">Send</button>
   </div>
-</div>
 
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
