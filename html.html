@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Realtime Chat Room</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div id="mainMenu">
+      <h2>Chat Room</h2>
+      <button onclick="startRoom()">Start New Room</button>
+      <input id="roomInput" placeholder="Enter Room Code">
+      <button onclick="joinRoom()">Join Room</button>
+    </div>
+
+    <div id="chatArea">
+      <h3>Room Code: <span id="currentRoomCode"></span></h3>
+      <div id="messages"></div>
+      <textarea id="messageInput" placeholder="Type message..." rows="3" style="resize: vertical;"></textarea>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
