@@ -35,6 +35,10 @@ button {
 
 #chatArea {
   display: none;
+  transition: background-color 0.5s ease;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 #messages {
