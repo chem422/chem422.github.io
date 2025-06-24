@@ -1,273 +1,135 @@
+/* style.css */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(to bottom, #0a0a0a, #1a1a1a);
-  color: #eee;
   margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #000;
+  color: #fff;
+  overflow: hidden;
+}
+
+.screen {
+  display: none;
+  height: 100vh;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
   position: relative;
-  transition: background 0.3s, color 0.3s;
 }
 
-body.light-mode {
-  background: linear-gradient(to bottom, #f0f0f0, #cccccc);
-  color: #111;
+.visible {
+  display: flex;
 }
 
-body::before {
-  content: "";
+.hidden {
+  display: none;
+}
+
+.background {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  background: url('https://i.ibb.co/hDF7fR3/stars-bg.png') repeat;
-  opacity: 0.2;
-  animation: scrollStars 60s linear infinite;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
   z-index: 0;
 }
 
-@keyframes scrollStars {
-  0% { background-position: 0 0; }
-  100% { background-position: 1000px 1000px; }
-}
-
-.container {
-  position: relative;
-  max-width: 500px;
-  margin: 30px auto;
-  padding: 20px;
-  background: rgba(34, 34, 34, 0.9);
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-  text-align: center;
+.planet#earth, .planet#moon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  position: absolute;
+  background: radial-gradient(#00f, #003);
   z-index: 1;
-  transition: background 0.3s;
 }
 
-body.light-mode .container {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+.planet#earth {
+  left: 20%; top: 40%;
 }
 
-#mainMenu, #chatArea {
-  display: none;
+.planet#moon {
+  right: 20%; top: 30%;
+  background: radial-gradient(#ccc, #444);
 }
 
-h2, h3 {
-  color: #00ffe1;
-  text-shadow: 0 0 4px #00ffe1;
-  transition: color 0.3s;
+.menu-box {
+  z-index: 2;
+  background: rgba(0,0,0,0.6);
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
 }
 
-body.light-mode h2, body.light-mode h3 {
-  color: #007acc;
-  text-shadow: none;
-}
-
-input, textarea {
-  width: 90%;
+.menu-box input, .menu-box button {
+  margin: 5px;
   padding: 10px;
-  margin: 10px 0;
+  width: 80%;
   font-size: 16px;
-  border: 1px solid #444;
-  border-radius: 6px;
-  background: #111;
-  color: #fff;
-  outline: none;
-  transition: border 0.3s ease, background 0.3s, color 0.3s;
-  box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
-}
-
-body.light-mode input, body.light-mode textarea {
-  background: #fff;
-  color: #000;
-  border: 1px solid #999;
-  box-shadow: none;
-}
-
-#chatArea {
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 10px;
-  background: #1b1b1b;
-  box-shadow: inset 0 0 10px #000;
-  transition: background 0.3s;
-  position: relative;
-  display: flex;
-}
-
-body.light-mode #chatArea {
-  background: #f5f5f5;
-  box-shadow: inset 0 0 10px #ccc;
-}
-
-#messages {
-  height: 200px;
-  overflow-y: auto;
-  background: #000;
-  border: 1px solid #555;
-  padding: 10px;
-  font-size: 14px;
+  border: none;
   border-radius: 8px;
-  box-shadow: inset 0 0 8px #222;
-  transition: background 0.3s, border 0.3s;
-  flex-grow: 1;
-}
-
-body.light-mode #messages {
-  background: #fff;
-  border: 1px solid #ccc;
-  box-shadow: none;
-}
-
-textarea {
-  resize: none;
-  height: 60px;
 }
 
 button {
-  padding: 10px 20px;
-  font-size: 16px;
-  margin: 5px;
-  border: none;
-  border-radius: 6px;
-  background: linear-gradient(to right, #00ffe1, #006eff);
-  color: #000;
-  font-weight: bold;
+  background: #444;
+  color: white;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  transition: all 0.2s ease;
 }
 
 button:hover {
-  transform: scale(1.05);
-  background: linear-gradient(to right, #00f2ff, #007bff);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+  background: #666;
 }
 
-#chatControls {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  display: flex;
-  gap: 10px;
-  z-index: 20;
-}
-
-#chatControls button {
-  padding: 6px 10px;
-  font-size: 14px;
-  background: #333;
-  color: #fff;
-  border: 1px solid #00ffe1;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-#chatSettingsMenu {
-  position: absolute;
-  top: 50px;
-  left: 10px;
-  background: #111;
-  border: 1px solid #00ffe1;
-  border-radius: 10px;
-  padding: 10px 20px;
-  z-index: 20;
-  color: #00ffe1;
-  font-size: 14px;
-  user-select: none;
-}
-
-#chatSettingsMenu label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-/* Space background and planets */
-
-.space-background {
-  position: relative;
-  height: 240px;
-  background: radial-gradient(#000 60%, #111);
-  overflow: hidden;
-  z-index: 1;
-  margin-bottom: 20px;
-}
-
-.planet {
-  position: absolute;
-  width: 80px;
-  transition: transform 0.3s;
-  filter: drop-shadow(0 0 5px #00ffe1);
-  animation: floatPlanet 10s ease-in-out infinite;
-  cursor: pointer;
-}
-
-@keyframes floatPlanet {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.earth {
-  bottom: 10px;
-  left: 30px;
-}
-
-.moon {
-  bottom: 20px;
-  left: 130px;
-}
-
-/* Settings popup in main menu */
-
-#settingsBtn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 10;
-  background: #444;
-  color: white;
-  font-size: 14px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  border: 1px solid #00ffe1;
-  transition: all 0.2s ease;
-}
-
-#settingsMenu {
-  display: none;
-  position: absolute;
-  top: 50px;
-  right: 10px;
-  background: #111;
-  border: 1px solid #00ffe1;
-  border-radius: 10px;
-  padding: 15px;
-  z-index: 10;
-  color: #00ffe1;
-  user-select: none;
-}
-
-#settingsMenu label {
-  display: block;
-  margin: 5px 0;
-}
-
-/* Scrollbar style for messages */
-
-#messages::-webkit-scrollbar {
-  width: 8px;
-}
-
-#messages::-webkit-scrollbar-thumb {
-  background: #00ffe1;
-  border-radius: 4px;
-}
-
-#messages::-webkit-scrollbar-track {
+.chat-header {
+  width: 100%;
   background: #222;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  padding: 10px;
+  overflow-y: auto;
+  width: 100%;
+  background: #111;
+  max-height: 60vh;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  resize: vertical;
+  margin-top: 5px;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+}
+
+.overlay {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 10;
+  color: white;
+}
+
+.light-mode body {
+  background: #eee;
+  color: #000;
+}
+
+.light-mode .chat-messages {
+  background: #fff;
+  color: #000;
+}
+
+.light-mode textarea {
+  background: #ddd;
+  color: #000;
 }
