@@ -1,4 +1,4 @@
-/* style.css */
+/* General Reset & Font */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
@@ -7,6 +7,7 @@ body {
   overflow: hidden;
 }
 
+/* Screen Handling */
 .screen {
   display: none;
   height: 100vh;
@@ -16,15 +17,14 @@ body {
   flex-direction: column;
   position: relative;
 }
-
 .visible {
   display: flex;
 }
-
 .hidden {
   display: none;
 }
 
+/* Animated Background Elements */
 .background {
   position: absolute;
   top: 0; left: 0;
@@ -32,7 +32,6 @@ body {
   overflow: hidden;
   z-index: 0;
 }
-
 .planet#earth, .planet#moon {
   width: 100px;
   height: 100px;
@@ -40,48 +39,49 @@ body {
   position: absolute;
   z-index: 1;
 }
-
 .planet#earth {
-  left: 20%; top: 40%;
   background: radial-gradient(#00f, #003);
+  left: 20%; top: 40%;
+  animation: float 4s ease-in-out infinite;
 }
-
 .planet#moon {
-  right: 20%; top: 30%;
   background: radial-gradient(#ccc, #444);
+  right: 20%; top: 30%;
+  animation: float 3s ease-in-out infinite reverse;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
+/* Main Menu Box */
 .menu-box {
   z-index: 2;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
   padding: 30px;
   border-radius: 15px;
   text-align: center;
+  box-shadow: 0 0 10px #00f;
 }
-
 .menu-box input, .menu-box button {
-  margin: 5px;
+  margin: 10px;
   padding: 10px;
   width: 80%;
   font-size: 16px;
   border: none;
   border-radius: 8px;
 }
-
 button {
-  background: #444;
+  background: #333;
   color: white;
   cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
   transition: background 0.3s;
 }
-
 button:hover {
-  background: #666;
+  background: #555;
 }
 
+/* Chat Area Layout */
 .chat-header {
   width: 100%;
   background: #222;
@@ -90,7 +90,6 @@ button:hover {
   justify-content: space-between;
   align-items: center;
 }
-
 .chat-messages {
   flex-grow: 1;
   padding: 10px;
@@ -98,10 +97,10 @@ button:hover {
   width: 100%;
   background: #111;
   max-height: 60vh;
+  font-size: 16px;
 }
-
 textarea {
-  width: calc(100% - 80px);
+  width: 100%;
   padding: 10px;
   font-size: 16px;
   resize: vertical;
@@ -112,54 +111,71 @@ textarea {
   border-radius: 8px;
 }
 
-#sendContainer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 5px;
+/* Chat Rainbow Mode */
+.rainbow-mode {
+  animation: rainbowBg 5s linear infinite;
 }
-
-.overlay {
-  position: absolute;
-  top: 10%;
-  left: 10%;
-  background: rgba(0,0,0,0.8);
-  padding: 20px;
-  border-radius: 10px;
-  z-index: 10;
-  color: white;
+@keyframes rainbowBg {
+  0% { background-color: hsl(0, 100%, 50%); }
+  25% { background-color: hsl(120, 100%, 50%); }
+  50% { background-color: hsl(240, 100%, 50%); }
+  75% { background-color: hsl(60, 100%, 50%); }
+  100% { background-color: hsl(360, 100%, 50%); }
 }
-
-.message.rainbow {
-  animation: rainbowText 2s linear infinite;
-  font-weight: bold;
+.rainbow-text {
+  animation: rainbowText 3s linear infinite;
 }
-
 @keyframes rainbowText {
   0% { color: red; }
-  16% { color: orange; }
-  32% { color: yellow; }
-  48% { color: green; }
-  64% { color: blue; }
-  80% { color: indigo; }
+  25% { color: orange; }
+  50% { color: green; }
+  75% { color: blue; }
   100% { color: violet; }
 }
 
-#fileUploadPopup {
+/* Overlay for File Upload */
+.overlay {
   position: absolute;
-  top: 30%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #222;
-  border: 2px dashed #666;
-  padding: 30px;
+  top: 20%;
+  left: 25%;
+  width: 50%;
+  padding: 20px;
+  background: rgba(0,0,0,0.85);
+  border: 2px dashed #888;
+  color: #fff;
+  z-index: 5;
   border-radius: 10px;
-  color: white;
-  z-index: 20;
-  display: none;
   text-align: center;
 }
+.overlay input[type="file"] {
+  margin-top: 20px;
+}
 
-#fileUploadPopup.active {
+/* Pong Area */
+#pongCanvas {
+  background: black;
   display: block;
+  margin: 20px auto;
+  border: 3px solid white;
+}
+.pong-color-green {
+  background-color: green !important;
+}
+.pong-color-blue {
+  background-color: blue !important;
+}
+
+/* Rickroll flying video */
+.rickroll-fly {
+  position: fixed;
+  top: 50%;
+  left: -200px;
+  width: 160px;
+  height: 90px;
+  z-index: 999;
+  animation: flyRick 6s linear forwards;
+}
+@keyframes flyRick {
+  from { transform: rotate(0deg) translateX(0); }
+  to { transform: rotate(720deg) translateX(120vw); }
 }
