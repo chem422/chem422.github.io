@@ -1,5 +1,4 @@
 // ==== FIREBASE CONFIGURATION ====
-// Replace the following config with your Firebase project config
     const firebaseConfig = {
     apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
     authDomain: "chat-room-22335.firebaseapp.com",
@@ -9,6 +8,7 @@
     appId: "1:20974926341:web:c413eb3122887d6803fa6c",
     measurementId: "G-WB5QY60EG6"
   };
+
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -84,8 +84,7 @@ function startRainbowMode() {
 function stopRainbowMode() {
   clearInterval(rainbowInterval);
   rainbowInterval = null;
-  const chatArea = document.getElementById("chatArea");
-  chatArea.style.backgroundColor = "";
+  document.getElementById("chatArea").style.backgroundColor = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -115,6 +114,105 @@ function setupSpaceMiniGame() {
   });
 }
 
+// 🕹️ Pong Game Function
+function startPongMiniGame(starterName) {
+  const canvas = document.getElementById("pongGame");
+  const ctx = canvas.getContext("2d");
+  canvas.style.display = "block";
+
+  let paddle1Y = 100;
+  let paddle2Y = 100;
+  let ballX = 200;
+  let ballY = 150;
+  let ballDX = 3;
+  let ballDY = 2;
+  let score1 = 0;
+  let score2 = 0;
+  const paddleHeight = 50;
+  const paddleWidth = 10;
+
+  let player = usersInRoom.size > 1 && starterName !== name ? 2 : 1;
+
+  let upPressed = false;
+  let downPressed = false;
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" || e.key === "w") upPressed = true;
+    if (e.key === "ArrowDown" || e.key === "s") downPressed = true;
+  });
+  document.addEventListener("keyup", (e) => {
+    if (e.key === "ArrowUp" || e.key === "w") upPressed = false;
+    if (e.key === "ArrowDown" || e.key === "s") downPressed = false;
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(ballX, ballY, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "lime";
+    ctx.fillRect(10, paddle1Y, paddleWidth, paddleHeight);
+    ctx.fillStyle = "blue";
+    ctx.fillRect(canvas.width - 20, paddle2Y, paddleWidth, paddleHeight);
+
+    ctx.fillStyle = "white";
+    ctx.font = "16px Arial";
+    ctx.fillText(`Score: ${score1} - ${score2}`, 150, 20);
+    ctx.fillText(`You are Player ${player === 1 ? "Green (1)" : "Blue (2)"}`, 100, 290);
+  }
+
+  function update() {
+    ballX += ballDX;
+    ballY += ballDY;
+
+    if (ballY <= 0 || ballY >= canvas.height) ballDY *= -1;
+
+    if (player === 1) {
+      if (upPressed) paddle1Y -= 5;
+      if (downPressed) paddle1Y += 5;
+    } else {
+      if (upPressed) paddle2Y -= 5;
+      if (downPressed) paddle2Y += 5;
+    }
+
+    paddle1Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle1Y));
+    paddle2Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle2Y));
+
+    if (ballX <= 20 && ballY >= paddle1Y && ballY <= paddle1Y + paddleHeight) ballDX *= -1;
+    if (ballX >= canvas.width - 20 && ballY >= paddle2Y && ballY <= paddle2Y + paddleHeight) ballDX *= -1;
+
+    if (ballX < 0) {
+      score2++;
+      resetBall();
+    } else if (ballX > canvas.width) {
+      score1++;
+      resetBall();
+    }
+
+    if (usersInRoom.size === 1) {
+      paddle2Y = ballY - paddleHeight / 2;
+    }
+  }
+
+  function resetBall() {
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    ballDX *= -1;
+    ballDY = (Math.random() - 0.5) * 6;
+  }
+
+  setInterval(() => {
+    update();
+    draw();
+  }, 1000 / 60);
+}
+
+// 🚀 Earth Defense Game
 function startAsteroidDefenseGame() {
   const canvas = document.createElement("canvas");
   canvas.width = 400;
@@ -143,11 +241,9 @@ function startAsteroidDefenseGame() {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Earth
     ctx.fillStyle = "#0f0";
     ctx.fillRect(earthX, 280, 80, 10);
 
-    // Draw Asteroids
     ctx.fillStyle = "gray";
     asteroids.forEach((a) => {
       ctx.beginPath();
@@ -155,10 +251,8 @@ function startAsteroidDefenseGame() {
       ctx.fill();
     });
 
-    // Draw Hearts
     hearts.forEach((h) => drawHeart(h.x, h.y));
 
-    // HUD
     ctx.fillStyle = "white";
     ctx.font = "14px sans-serif";
     ctx.fillText("Score: " + score, 10, 20);
