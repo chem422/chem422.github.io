@@ -65,14 +65,3 @@ button {
   padding: 10px;
   border-radius: 4px;
 }
-
-#pongScoreHUD {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.7);
-  padding: 10px 20px;
-  font-weight: bold;
-  border-radius: 8px;
-}
