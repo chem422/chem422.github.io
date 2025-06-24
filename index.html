@@ -10,6 +10,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
+  <div class="space-bg">
+    <img id="moon" src="https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg" alt="Moon" />
+    <img id="earth" src="https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg" alt="Earth" />
+  </div>
+
   <div class="container">
     <div id="mainMenu">
       <h2>Chat Room</h2>
@@ -18,22 +23,12 @@
       <button onclick="joinRoom()">Join Room</button>
     </div>
 
-    <div id="chatArea" style="display:none;">
+    <div id="chatArea" style="display: none;">
       <h3>Room Code: <span id="currentRoomCode"></span></h3>
       <div id="messages"></div>
-      <textarea
-        id="messageInput"
-        placeholder="Type message..."
-        rows="3"
-        style="resize: vertical;"
-      ></textarea>
+      <textarea id="messageInput" placeholder="Type message..." rows="3"></textarea>
       <button onclick="sendMessage()">Send</button>
-      <canvas
-        id="pongGame"
-        width="400"
-        height="300"
-        style="display: none; border: 1px solid #ccc;"
-      ></canvas>
+      <canvas id="pongGame" width="400" height="300" style="display: none;"></canvas>
     </div>
   </div>
 
