@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chem Chat 1.8</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="mainMenu" class="screen visible">
+    <div class="menu-box">
+      <h1>Chem Chat 1.8</h1>
+      <input id="usernameInput" placeholder="Enter your name" />
+      <input id="roomInput" placeholder="Enter room code" />
+      <button onclick="startRoom()">Start Room</button>
+      <button onclick="joinRoom()">Join Room</button>
+      <button onclick="toggleSettingsMenu()">Settings</button>
+    </div>
+    <div class="background">
+      <div id="earth" class="planet"></div>
+      <div id="moon" class="planet"></div>
+    </div>
+  </div>
+
+  <div id="chatArea" class="screen hidden">
+    <div class="chat-header">
+      <div>Room: <span id="currentRoomCode"></span></div>
+      <div>
+        <button onclick="leaveRoom()">Back</button>
+        <button onclick="toggleChatSettingsMenu()">⚙️</button>
+      </div>
+    </div>
+    <div id="messages" class="chat-messages"></div>
+    <div class="chat-input">
+      <textarea id="messageInput" placeholder="Type your message..."></textarea>
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="openFileUpload()">+ Add</button>
+    </div>
+    <canvas id="pongCanvas" width="400" height="300" class="hidden"></canvas>
+    <div id="rickrollFlyContainer"></div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settingsMenu" class="overlay hidden">
+    <h3>Main Settings</h3>
+    <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label>
+    <label><input type="checkbox" id="musicToggle" /> Background Music</label>
+    <button onclick="toggleSettingsMenu()">Close</button>
+  </div>
+  <div id="chatSettingsMenu" class="overlay hidden">
+    <h3>Chat Settings</h3>
+    <label><input type="checkbox" id="chatNotifToggle" checked /> Notification Sound</label>
+    <label><input type="checkbox" id="musicToggle" /> Background Music</label>
+    <button onclick="toggleChatSettingsMenu()">Close</button>
+  </div>
+
+  <!-- File upload overlay -->
+  <div id="fileUploadOverlay" class="overlay hidden">
+    <h3>Upload a file</h3>
+    <input type="file" id="fileInput" accept=".txt" />
+    <p>Drag and drop a .txt file or select one</p>
+    <button onclick="uploadSelectedFile()">Upload</button>
+    <button onclick="closeFileUpload()">Cancel</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
