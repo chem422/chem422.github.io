@@ -291,8 +291,9 @@ function initPongGame() {
 function startAsteroidDefenseGame() {
   alert("Asteroid game loading...");
   // TODO: Implement actual asteroid defense game logic here
-}
-window.startRoom = startRoom;
+
+
+  window.startRoom = startRoom;
 window.joinRoom = joinRoom;
 window.toggleSettingsMenu = toggleSettingsMenu;
 window.toggleChatSettingsMenu = toggleChatSettingsMenu;
@@ -300,4 +301,7 @@ window.leaveRoom = leaveRoom;
 window.openFileUpload = openFileUpload;
 window.uploadSelectedFile = uploadSelectedFile;
 window.closeFileUpload = closeFileUpload;
+
+}
+
 
