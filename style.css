@@ -1,188 +1,219 @@
-/* === Base Layout === */
 body {
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: #0e0e1a;
-  color: #fff;
+  background: url('space-bg.jpg') no-repeat center/cover;
+  color: #0ff;
+  font-family: 'Orbitron', sans-serif;
   overflow: hidden;
 }
-
-main {
-  display: flex;
+#intro {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
   height: 100vh;
-  flex-direction: column;
+  z-index: 1000;
+}
+#rocket {
+  position: absolute;
+  width: 50px;
+  animation: swirl 3s ease-in forwards;
+}
+@keyframes swirl {
+  0% { transform: translate(-100vw, 100vh) rotate(0deg); }
+  100% { transform: translate(50vw, 50vh) rotate(720deg); }
+}
+#explosion {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: url('explosion.png') no-repeat center/contain;
+  top: 50vh;
+  left: 50vw;
+  transform: translate(-50%, -50%);
+  animation: explode 0.5s ease-out 3s forwards;
+}
+@keyframes explode {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.star {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle 2s ease-in-out 3.5s forwards;
+}
+@keyframes twinkle {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0); }
+}
+#earth, #moon {
+  position: fixed;
+  z-index: 10;
+}
+#earth { width: 100px; bottom: 20px; left: 20px; }
+#moon { width: 30px; bottom: 100px; left: 100px; }
+#main {
+  display: flex;
   justify-content: center;
   align-items: center;
+  height: 100vh;
 }
-
-/* === Containers === */
-.container {
-  padding: 20px;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.4);
-  box-shadow: 0 0 20px #222;
-  max-width: 600px;
-  width: 100%;
-  margin: auto;
-}
-
-.flex-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.flex-col {
+#main-menu {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 300px;
 }
-
-/* === Buttons === */
 button {
-  padding: 10px 20px;
-  background: #5e60ce;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
+  padding: 10px;
+  font-size: 16px;
+  background: rgba(0, 255, 255, 0.2);
+  border: 2px solid #0ff;
+  color: #0ff;
+  border-radius: 5px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: all 0.3s;
 }
 button:hover {
-  background: #4a4cc4;
+  background: rgba(0, 255, 255, 0.5);
+  transform: scale(1.05);
 }
-
-/* === Inputs === */
-input, textarea, select {
+.red { background: rgba(255, 0, 0, 0.2); border: 2px solid #f00; }
+.red:hover { background: rgba(255, 0, 0, 0.5); }
+input, select {
   padding: 10px;
-  border-radius: 6px;
-  border: none;
-  background: #1f1f2f;
-  color: white;
-  width: 100%;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #0ff;
+  color: #0ff;
+  border-radius: 5px;
 }
-
-/* === Modals === */
+.dropdown {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+}
+.dropdown-content {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border: 1px solid #0ff;
+  border-radius: 5px;
+  display: none;
+  transition: opacity 0.3s;
+}
+.dropdown-content.show { display: block; opacity: 1; }
 .modal {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #1b1b2f;
+  background: rgba(0, 0, 0, 0.9);
   padding: 20px;
+  border: 2px solid #0ff;
   border-radius: 10px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.8);
-  z-index: 1000;
-  width: 90%;
-  max-width: 500px;
-  display: none;
+  z-index: 100;
+  animation: fadeIn 0.3s;
 }
-.modal.active {
-  display: block;
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translate(-50%, -60%); }
+  100% { opacity: 1; transform: translate(-50%, -50%); }
 }
-
-/* === Toast Notification === */
-.toast {
+.back, #tutorial-prev {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+#tutorial-exit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+#tutorial-next {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+.warning { color: #f00; }
+.blurred { filter: blur(5px); }
+#notification-popup {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #282850;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px #000;
-  z-index: 2000;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.toast.show {
-  opacity: 1;
-}
-
-/* === Chat UI === */
-.chat-box {
-  height: 300px;
-  overflow-y: auto;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(128, 128, 128, 0.8);
   padding: 10px;
-  background: #161628;
-  border-radius: 10px;
+  border-radius: 5px;
+  animation: slideIn 0.5s;
 }
-.message {
-  margin-bottom: 8px;
-  word-wrap: break-word;
+@keyframes slideIn {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
 }
-.message.self {
-  text-align: right;
-  color: #90f3ff;
+#pong-canvas {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #0ff;
 }
-.message.other {
-  text-align: left;
-  color: #ffc9f0;
+.difficulty-btn, .control-btn {
+  margin: 5px;
 }
-
-/* === Friend System === */
-.friend-list, .request-list {
-  max-height: 200px;
-  overflow-y: auto;
-  background: #1e1e33;
+.difficulty-btn.selected, .control-btn.selected {
+  background: #0ff;
+  color: #000;
+}
+.friend, .notification, .group-chat {
+  background: rgba(0, 0, 0, 0.5);
   padding: 10px;
-  border-radius: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
 }
-.friend-entry {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px;
-  background: #2a2a44;
-  border-radius: 6px;
-  margin-bottom: 5px;
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
-
-/* === Game Canvases === */
-canvas {
-  background: #000;
-  display: block;
-  margin: 20px auto;
-  border: 2px solid #4a4cc4;
-  border-radius: 8px;
-  max-width: 100%;
-}
-
-/* === Responsive === */
-@media screen and (max-width: 768px) {
-  .container {
-    padding: 10px;
-  }
-  input, button {
-    font-size: 16px;
-  }
-}
-
-/* === Easter Eggs === */
-.rainbow-text {
-  animation: rainbow 2s linear infinite;
+.dot.online { background: #0f0; }
+.dot.offline { background: #f00; }
+.rainbow {
+  animation: rainbow 2s infinite;
 }
 @keyframes rainbow {
-  0% { color: red; }
-  20% { color: orange; }
-  40% { color: yellow; }
-  60% { color: green; }
-  80% { color: blue; }
-  100% { color: violet; }
+  0% { color: #f00; }
+  14% { color: #ff0; }
+  28% { color: #0f0; }
+  42% { color: #0ff; }
+  57% { color: #00f; }
+  71% { color: #f0f; }
+  85% { color: #f00; }
 }
-
-/* === Rocket Animation === */
-.rocket {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  animation: lift-off 4s ease-in-out forwards;
+#chat-messages {
+  height: 300px;
+  overflow-y: auto;
+  border: 1px solid #0ff;
+  padding: 10px;
 }
-
-@keyframes lift-off {
-  0% { top: 100%; opacity: 1; }
-  90% { top: 10%; opacity: 1; }
-  100% { top: -50px; opacity: 0; }
+#tutorial-modal {
+  z-index: 200;
+}
+.tutorial-highlight {
+  position: relative;
+  z-index: 150;
+  box-shadow: 0 0 10px 5px #0ff;
+}
+.tutorial-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+}
+@media (max-width: 600px) {
+  #earth { width: 50px; bottom: 10px; left: 10px; }
+  #moon { width: 15px; bottom: 50px; left: 50px; }
+  #main-menu { width: 90%; }
+  button, input { font-size: 14px; }
+  #pong-canvas { width: 100%; height: auto; aspect-ratio: 3/2; }
 }
