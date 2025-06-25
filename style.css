@@ -79,7 +79,33 @@ input, select {
   border-radius: 5px;
 }
 
-.dropdown, .modal, #notification-popup, #phone-controls, #pong-cancel, #not-rickroll {
+.dropdown {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+}
+
+.dropdown-content {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border: 1px solid #0ff;
+  border-radius: 5px;
+  display: none;
+  transition: opacity 0.3s;
+  z-index: 21;
+}
+
+.dropdown-content.hidden {
+  display: none;
+}
+
+.dropdown-content.show {
+  display: block;
+  opacity: 1;
+}
+
+.modal, #notification-popup, #phone-controls, #pong-cancel, #not-rickroll {
   display: none !important; /* Forcefully hide all non-main-menu elements */
 }
 
