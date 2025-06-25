@@ -25,19 +25,18 @@ function playNotificationSound() {
   if (notifSoundEnabled) notificationSound.play().catch(() => {});
 }
 
+function hideAllModals() {
+  document.querySelectorAll(".modal").forEach(modal => modal.classList.add("hidden"));
+  document.querySelectorAll(".dropdown-content").forEach(content => content.classList.remove("show"));
+}
+
 document.getElementById("settings").addEventListener("click", () => {
+  hideAllModals();
   document.getElementById("settings-modal").classList.remove("hidden");
-  if (auth.currentUser) {
-    db.ref(`users/${auth.currentUser.uid}/settings`).once("value").then(snap => {
-      const settings = snap.val() || { bgMusic: true, notifSound: true };
-      document.getElementById("bg-music-toggle").checked = settings.bgMusic;
-      document.getElementById("notif-sound-toggle").checked = settings.notifSound;
-      bgMusicEnabled = settings.bgMusic;
-      notifSoundEnabled = settings.notifSound;
-      bgMusic.muted = !bgMusicEnabled;
-      notificationSound.muted = !notifSoundEnabled;
-    });
-  }
+});
+
+document.querySelector("#settings-modal .back").addEventListener("click", () => {
+  document.getElementById("settings-modal").classList.add("hidden");
 });
 
 document.getElementById("save-settings").addEventListener("click", () => {
@@ -59,6 +58,7 @@ const main = document.getElementById("main");
 setTimeout(() => {
   intro.style.display = "none";
   main.classList.remove("hidden");
+  hideAllModals(); // Ensure all modals are hidden on load
   if (bgMusicEnabled) bgMusic.play().catch(() => {});
 }, 5500);
 
@@ -82,48 +82,82 @@ db.ref(".info/connected").on("value", snap => {
 
 function handleDrop(event) {
   event.preventDefault();
+  const chatInputArea = document.getElementById("chat-input-area");
+  chatInputArea.classList.remove("dragover");
   const file = event.dataTransfer.files[0];
   if (file && file.type === "text/plain") {
     const reader = new FileReader();
     reader.onload = e => {
       const roomId = document.getElementById("room-code-display").textContent;
-      const isGroup = !document.getElementById("group-chat-dropdown").classList.contains("hidden");
-      const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
-      db.ref(path).push({
-        sender: auth.currentUser?.email.split("@")[0] || document.getElementById("temp-username").value || "Guest",
-        text: `Uploaded .txt: ${e.target.result}`,
-        time: Date.now(),
-        type: "file"
-      });
+      if (roomId) {
+        const isGroup = !document.getElementById("group-chat-dropdown").classList.contains("hidden");
+        const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
+        db.ref(path).push({
+          sender: auth.currentUser?.email.split("@")[0] || document.getElementById("temp-username").value || "Guest",
+          text: `Uploaded .txt: ${e.target.result.substring(0, 500)}`,
+          time: Date.now(),
+          type: "file"
+        }).catch(err => console.error("Upload failed:", err));
+      }
     };
     reader.readAsText(file);
   }
 }
 
+document.getElementById("chat-input-area").addEventListener("dragover", e => {
+  e.preventDefault();
+  document.getElementById("chat-input-area").classList.add("dragover");
+});
+
+document.getElementById("chat-input-area").addEventListener("dragleave", () => {
+  document.getElementById("chat-input-area").classList.remove("dragover");
+});
+
 document.getElementById("chat-send").addEventListener("click", () => {
   const input = document.getElementById("chat-input");
   const roomId = document.getElementById("room-code-display").textContent;
-  const isGroup = !document.getElementById("group-chat-dropdown").classList.contains("hidden");
-  const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
-  db.ref(path).push({
-    sender: auth.currentUser?.email.split("@")[0] || document.getElementById("temp-username").value || "Guest",
-    text: input.value,
-    time: Date.now()
-  });
-  if (input.value === "rickroll(<io>)") {
-    document.body.style.backgroundImage = "url('R.png')";
-    document.getElementById("not-rickroll").classList.remove("hidden");
-    document.getElementById("not-rickroll").addEventListener("click", () => {
-      window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  if (roomId && input.value.trim()) {
+    const isGroup = !document.getElementById("group-chat-dropdown").classList.contains("hidden");
+    const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
+    db.ref(path).push({
+      sender: auth.currentUser?.email.split("@")[0] || document.getElementById("temp-username").value || "Guest",
+      text: input.value,
+      time: Date.now()
     });
-    setInterval(() => {
-      if (notifSoundEnabled) rickrollSound.play().catch(() => {});
-    }, 10000);
-  } else if (input.value === "brodychem6(<pong>)" && currentUsers.size >= 1) {
-    document.getElementById("pong-modal").classList.remove("hidden");
-    startPongGame();
+    if (input.value === "rickroll(<io>)") {
+      document.body.style.backgroundImage = "url('R.png')";
+      document.getElementById("not-rickroll").classList.remove("hidden");
+      document.getElementById("not-rickroll").addEventListener("click", () => {
+        window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+      });
+      setInterval(() => {
+        if (notifSoundEnabled) rickrollSound.play().catch(() => {});
+      }, 10000);
+    } else if (input.value === "brodychem6(<pong>)" && currentUsers.size >= 1) {
+      hideAllModals();
+      document.getElementById("pong-modal").classList.remove("hidden");
+      startPongGame();
+    }
+    input.value = "";
   }
-  input.value = "";
+});
+
+document.getElementById("account-dropdown").addEventListener("click", () => {
+  hideAllModals();
+  const content = document.getElementById("account-content");
+  content.classList.toggle("show");
+});
+
+document.getElementById("friends-dropdown").addEventListener("click", () => {
+  hideAllModals();
+  const content = document.getElementById("friends-content");
+  content.classList.toggle("show");
+});
+
+document.querySelectorAll(".modal .back").forEach(back => {
+  back.addEventListener("click", () => {
+    back.closest(".modal").classList.add("hidden");
+  });
 });
 
 const pongCanvas = document.getElementById("pong-canvas");
@@ -142,12 +176,16 @@ function startPongGame() {
     document.getElementById("opponent-name").textContent = "AI";
   } else if (userCount === 2) {
     const users = Array.from(currentUsers);
-    document.getElementById("opponent-name").textContent = users.filter(u => u !== auth.currentUser?.uid)[0] || "Opponent";
+    const opponentUid = users.filter(u => u !== auth.currentUser?.uid)[0];
+    document.getElementById("opponent-name").textContent = opponentUid || "Opponent";
   } else if (userCount >= 4) {
     const pongInitiator = auth.currentUser?.uid;
     const otherUsers = Array.from(currentUsers).filter(u => u !== pongInitiator);
     const randomOpponent = otherUsers[Math.floor(Math.random() * otherUsers.length)];
     document.getElementById("opponent-name").textContent = randomOpponent || "Random Opponent";
+  } else {
+    document.getElementById("opponent-name").textContent = "Waiting for players...";
+    return;
   }
   gameActive = true;
   resetBall();
@@ -182,7 +220,7 @@ function gameLoop() {
   document.addEventListener("keydown", e => {
     if (e.key === "w" && playerPaddle.y > 0) playerPaddle.y -= 5;
     if (e.key === "s" && playerPaddle.y < pongCanvas.height - 60) playerPaddle.y += 5;
-  });
+  }, { once: true });
   requestAnimationFrame(gameLoop);
 }
 
@@ -204,6 +242,7 @@ const tutorialSteps = [
 
 let currentStep = 0;
 document.getElementById("tutorial").addEventListener("click", () => {
+  hideAllModals();
   document.getElementById("tutorial-modal").classList.remove("hidden");
   const overlay = document.createElement("div");
   overlay.className = "tutorial-overlay";
