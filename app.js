@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let opponentPaddle = { x: pongCanvas.width - 20, y: pongCanvas.height / 2 - 30, score: 0 };
   let ball = { x: pongCanvas.width / 2, y: pongCanvas.height / 2, dx: 5, dy: 5 };
   let gameActive = false;
-  let ballSpeed = 5;
+  let ballSpeed = 2.5; // Default to Normal speed
 
   function resetGameState() {
     playerPaddle.score = 0;
@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gameActive = false;
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("normal").classList.add("selected");
-    ballSpeed = 5;
+    ballSpeed = 2.5; // Reset to Normal speed
     resetBall();
   }
 
@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Improved AI: Predict ball's future position
     const timeToReachPaddle = (pongCanvas.width - opponentPaddle.x - ball.x) / Math.abs(ball.dx);
     const predictedY = ball.y + ball.dy * timeToReachPaddle;
-    opponentPaddle.y += (predictedY - (opponentPaddle.y + 30)) * 0.15; // Smarter adjustment
+    opponentPaddle.y += (predictedY - (opponentPaddle.y + 30)) * 0.15;
 
     if (opponentPaddle.y < 0) opponentPaddle.y = 0;
     if (opponentPaddle.y > pongCanvas.height - 60) opponentPaddle.y = pongCanvas.height - 60;
@@ -166,8 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillRect(ball.x, ball.y, 10, 10);
     ctx.fillText(playerPaddle.score, pongCanvas.width / 4, 30);
     ctx.fillText(opponentPaddle.score, 3 * pongCanvas.width / 4, 30);
-    ball.x += ball.dx;
-    ball.y += ball.dy;
+    ball.x += ball.dx / 2; // Halve the speed increment
+    ball.y += ball.dy / 2; // Halve the speed increment
     if (ball.y <= 0 || ball.y >= pongCanvas.height - 10) ball.dy *= -1;
     if (ball.x <= playerPaddle.x + 10 && ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + 60) ball.dx *= -1;
     if (ball.x >= opponentPaddle.x - 10 && ball.y >= opponentPaddle.y && ball.y <= opponentPaddle.y + 60) ball.dx *= -1;
@@ -212,19 +212,19 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("easy").addEventListener("click", () => {
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("easy").classList.add("selected");
-    ballSpeed = 2;
+    ballSpeed = 1; // Reduced from 2
   });
 
   document.getElementById("normal").addEventListener("click", () => {
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("normal").classList.add("selected");
-    ballSpeed = 5;
+    ballSpeed = 2.5; // Reduced from 5
   });
 
   document.getElementById("hard").addEventListener("click", () => {
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("hard").classList.add("selected");
-    ballSpeed = 8;
+    ballSpeed = 4; // Reduced from 8
   });
 
   document.getElementById("confirm-difficulty").addEventListener("click", startPongGame);
