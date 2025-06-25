@@ -31,6 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Tutorial clicked! (Placeholder)");
   });
 
+  document.getElementById("play-pong").addEventListener("click", () => {
+    document.getElementById("pong-modal").classList.remove("hidden");
+  });
+
   // Account dropdown functionality
   document.getElementById("account-dropdown").addEventListener("click", () => {
     const content = document.getElementById("account-content");
@@ -66,4 +70,63 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("notifications").addEventListener("click", () => {
     alert("Notifications clicked! (Placeholder)");
   });
+
+  // Pong game functionality
+  document.querySelector("#pong-modal .back").addEventListener("click", () => {
+    document.getElementById("pong-modal").classList.add("hidden");
+  });
+
+  const pongCanvas = document.getElementById("pong-canvas");
+  pongCanvas.width = 600;
+  pongCanvas.height = 400;
+  const ctx = pongCanvas.getContext("2d");
+  let playerPaddle = { x: 10, y: pongCanvas.height / 2 - 30, score: 0 };
+  let opponentPaddle = { x: pongCanvas.width - 20, y: pongCanvas.height / 2 - 30, score: 0 };
+  let ball = { x: pongCanvas.width / 2, y: pongCanvas.height / 2, dx: 5, dy: 5 };
+  let gameActive = false;
+
+  function startPongGame() {
+    gameActive = true;
+    resetBall();
+    gameLoop();
+  }
+
+  function gameLoop() {
+    if (!gameActive) return;
+    ctx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+    ctx.fillStyle = "#0ff";
+    ctx.fillRect(playerPaddle.x, playerPaddle.y, 10, 60);
+    opponentPaddle.y += (ball.y - (opponentPaddle.y + 30)) * 0.1; // AI movement
+    ctx.fillRect(opponentPaddle.x, opponentPaddle.y, 10, 60);
+    ctx.fillRect(ball.x, ball.y, 10, 10);
+    ctx.fillText(playerPaddle.score, pongCanvas.width / 4, 30);
+    ctx.fillText(opponentPaddle.score, 3 * pongCanvas.width / 4, 30);
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+    if (ball.y <= 0 || ball.y >= pongCanvas.height - 10) ball.dy *= -1;
+    if (ball.x <= playerPaddle.x + 10 && ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + 60) ball.dx *= -1;
+    if (ball.x >= opponentPaddle.x - 10 && ball.y >= opponentPaddle.y && ball.y <= opponentPaddle.y + 60) ball.dx *= -1;
+    if (ball.x <= 0) { opponentPaddle.score++; resetBall(); }
+    if (ball.x >= pongCanvas.width - 10) { playerPaddle.score++; resetBall(); }
+    if (playerPaddle.score >= 10 || opponentPaddle.score >= 10) {
+      alert(`Game Over! ${playerPaddle.score >= 10 ? "You" : "Opponent"} Win!`);
+      document.getElementById("pong-modal").classList.add("hidden");
+      gameActive = false;
+      return;
+    }
+    document.addEventListener("keydown", e => {
+      if (e.key === "w" && playerPaddle.y > 0) playerPaddle.y -= 5;
+      if (e.key === "s" && playerPaddle.y < pongCanvas.height - 60) playerPaddle.y += 5;
+    }, { once: true });
+    requestAnimationFrame(gameLoop);
+  }
+
+  function resetBall() {
+    ball.x = pongCanvas.width / 2;
+    ball.y = pongCanvas.height / 2;
+    ball.dx = 5 * (Math.random() > 0.5 ? 1 : -1);
+    ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
+  }
+
+  document.getElementById("confirm-difficulty").addEventListener("click", startPongGame);
 });
