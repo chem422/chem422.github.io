@@ -68,14 +68,17 @@
       </div>
       <canvas id="pong-canvas" width="600" height="400"></canvas>
       <button id="pong-cancel" class="hidden">Cancel</button>
+      <p id="pong-opponent">Opponent: <span id="opponent-name"></span></p>
     </div>
     <div id="chat-room-modal" class="modal hidden">
       <button class="back">Back</button>
       <h2>Chat Room: <span id="room-code-display"></span></h2>
       <div id="chat-messages"></div>
-      <input id="chat-input" type="text" placeholder="Type a message">
-      <button id="chat-send">Send</button>
-      <button id="chat-add">Add</button>
+      <div id="chat-input-area" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <input id="chat-input" type="text" placeholder="Type a message or drag .txt file">
+        <button id="chat-send">Send</button>
+        <button id="chat-add">Add</button>
+      </div>
       <div id="group-chat-dropdown" class="dropdown hidden">
         <button>Group Chat</button>
         <div class="dropdown-content hidden">
