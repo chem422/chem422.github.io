@@ -95,8 +95,12 @@ input, select {
   border-radius: 5px;
 }
 
-.dropdown, .modal {
-  display: none; /* Hide all dropdowns and modals initially */
+.dropdown, .modal, #notification-popup, #phone-controls, #pong-cancel, #not-rickroll {
+  display: none !important; /* Forcefully hide all non-main-menu elements */
+}
+
+.hidden {
+  display: none;
 }
 
 @media (max-width: 600px) {
