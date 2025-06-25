@@ -15,17 +15,6 @@ body {
   z-index: 1000;
 }
 
-#rocket {
-  position: absolute;
-  width: 50px;
-  animation: swirl 3s ease-in forwards;
-}
-
-@keyframes swirl {
-  0% { transform: translate(-100vw, 100vh) rotate(0deg); }
-  100% { transform: translate(50vw, 50vh) rotate(720deg); }
-}
-
 #explosion {
   position: absolute;
   width: 100px;
