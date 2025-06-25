@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  background: url('space-bg.jpg') no-repeat center/cover;
+  background: url('space.jpg') no-repeat center/cover;
   color: #0ff;
   font-family: 'Orbitron', sans-serif;
   overflow: hidden;
@@ -26,7 +26,7 @@ body {
   position: absolute;
   width: 100px;
   height: 100px;
-  background: url('explosion.png') no-repeat center/contain;
+  background: url('explosion_PNG15349.png') no-repeat center/contain;
   top: 50vh;
   left: 50vw;
   transform: translate(-50%, -50%);
@@ -47,10 +47,6 @@ body {
 @keyframes twinkle {
   0% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(0); }
-}
-#earth, #moon {
-  position: fixed;
-  z-index: 10;
 }
 #earth { width: 100px; bottom: 20px; left: 20px; }
 #moon { width: 30px; bottom: 100px; left: 100px; }
