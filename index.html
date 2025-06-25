@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chem Chat 1.9</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="intro">
+    <img id="rocket" src="rocket.png" alt="Rocket">
+    <div id="explosion"></div>
+    <div class="star"></div>
+    <div class="star"></div>
+    <div class="star"></div>
+  </div>
+  <div id="main" class="hidden">
+    <img id="earth" src="earth_PNG3.png" alt="Earth">
+    <img id="moon" src="moon.png" alt="Moon">
+    <div id="main-menu">
+      <button id="start-chat">Start Chat</button>
+      <button id="join-chat">Join Chat</button>
+      <input id="room-code" type="text" placeholder="Enter room code">
+      <button id="join-group-chat">Join Group Chat</button>
+      <input id="temp-username" type="text" placeholder="Enter username" class="hidden">
+      <button id="settings">Settings</button>
+      <button id="tutorial">Tutorial</button>
+    </div>
+    <div id="account-dropdown" class="dropdown">
+      <button>Account</button>
+      <div id="account-content" class="dropdown-content hidden">
+        <p id="account-status-text">You are not signed in.</p>
+        <button id="sign-in">Sign In</button>
+        <button id="sign-up">Sign Up</button>
+      </div>
+    </div>
+    <div id="friends-dropdown" class="dropdown">
+      <button>Friends</button>
+      <div id="friends-content" class="dropdown-content hidden">
+        <button id="friends-list">Friends List</button>
+        <button id="add-friend">Add Friend</button>
+        <button id="invite-group">Invite to Group Chat</button>
+        <button id="notifications">Notifications</button>
+      </div>
+    </div>
+    <div id="settings-modal" class="modal hidden">
+      <button class="back">Back</button>
+      <h2>Settings</h2>
+      <label><input type="checkbox" id="bg-music-toggle" checked> Background Music</label>
+      <label><input type="checkbox" id="notif-sound-toggle" checked> Notification Sound</label>
+      <button id="save-settings">Save</button>
+    </div>
+    <div id="pong-modal" class="modal hidden">
+      <button class="back">Back</button>
+      <h2>Pong</h2>
+      <div id="difficulty-menu">
+        <button id="easy" class="difficulty-btn">Easy</button>
+        <button id="normal" class="difficulty-btn selected">Normal</button>
+        <button id="hard" class="difficulty-btn">Hard</button>
+        <button id="confirm-difficulty">Confirm</button>
+      </div>
+      <div id="phone-controls" class="hidden">
+        <button id="tilt-control" class="control-btn">Tilt</button>
+        <button id="touch-control" class="control-btn">Touch/Drag</button>
+        <button id="arrow-control" class="control-btn">Digital Arrows</button>
+        <button id="confirm-control">Confirm</button>
+      </div>
+      <canvas id="pong-canvas" width="600" height="400"></canvas>
+      <button id="pong-cancel" class="hidden">Cancel</button>
+    </div>
+    <div id="chat-room-modal" class="modal hidden">
+      <button class="back">Back</button>
+      <h2>Chat Room: <span id="room-code-display"></span></h2>
+      <div id="chat-messages"></div>
+      <input id="chat-input" type="text" placeholder="Type a message">
+      <button id="chat-send">Send</button>
+      <button id="chat-add">Add</button>
+      <div id="group-chat-dropdown" class="dropdown hidden">
+        <button>Group Chat</button>
+        <div class="dropdown-content hidden">
+          <button id="rename-group">Rename</button>
+          <button id="delete-group">Delete</button>
+          <button id="add-users">Add Users</button>
+        </div>
+      </div>
+      <button id="not-rickroll" class="hidden">Not a Rick Roll</button>
+    </div>
+    <div id="tutorial-modal" class="modal hidden">
+      <button class="back">Back</button>
+      <button id="tutorial-exit">Exit</button>
+      <h2>Tutorial</h2>
+      <p id="tutorial-text"></p>
+      <button id="tutorial-prev">Previous</button>
+      <button id="tutorial-next">Next</button>
+    </div>
+    <div id="notification-popup" class="hidden"></div>
+  </div>
+  <audio id="bg-music" src="lo-fi-alarm-clock-243766 (1).mp3" loop></audio>
+  <audio id="notification-sound" src="notification-alert-269289.mp3"></audio>
+  <audio id="rickroll-sound" src="trimmed_audio_5s.mp3"></audio>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="app.js" type="module"></script>
+</body>
+</html>
