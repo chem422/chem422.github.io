@@ -91,7 +91,7 @@ input, select {
 
 #friends-dropdown {
   top: 10px;
-  right: 70px; /* Offset to space apart */
+  right: 40%; /* Adjusted for mobile spacing */
 }
 
 .dropdown-content {
@@ -141,6 +141,10 @@ input, select {
 #pong-canvas {
   background: rgba(0, 0, 0, 0.8);
   border: 2px solid #0ff;
+  width: 90vw; /* Responsive width */
+  height: 60vw; /* Responsive height */
+  max-width: 600px;
+  max-height: 400px;
 }
 
 .difficulty-btn, .control-btn {
@@ -165,6 +169,7 @@ input, select {
   #moon { width: 15px; bottom: 50px; left: 50px; }
   #main-menu { width: 90%; }
   button, input { font-size: 14px; }
-  #account-dropdown { right: 5px; }
-  #friends-dropdown { right: 60px; }
+  #account-dropdown { right: 5%; }
+  #friends-dropdown { right: 45%; } /* Adjusted for mobile */
+  #pong-canvas { width: 90vw; height: 60vw; }
 }
