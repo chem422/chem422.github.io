@@ -61,6 +61,10 @@ body {
   gap: 10px;
   width: 300px;
   z-index: 10;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  border: 2px solid #0ff;
+  border-radius: 10px;
 }
 
 button {
@@ -91,164 +95,8 @@ input, select {
   border-radius: 5px;
 }
 
-.dropdown {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 20;
-}
-
-.dropdown-content {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px;
-  border: 1px solid #0ff;
-  border-radius: 5px;
-  display: none;
-  transition: opacity 0.3s;
-  z-index: 21;
-}
-
-.dropdown-content.show { display: block; opacity: 1; }
-
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.9);
-  padding: 20px;
-  border: 2px solid #0ff;
-  border-radius: 10px;
-  z-index: 100;
-  animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-  0% { opacity: 0; transform: translate(-50%, -60%); }
-  100% { opacity: 1; transform: translate(-50%, -50%); }
-}
-
-.back, #tutorial-prev {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 101;
-}
-
-#tutorial-exit {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 101;
-}
-
-#tutorial-next {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-}
-
-.warning { color: #f00; }
-
-.blurred { filter: blur(5px); }
-
-#notification-popup {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(128, 128, 128, 0.8);
-  padding: 10px;
-  border-radius: 5px;
-  animation: slideIn 0.5s;
-  z-index: 50;
-}
-
-@keyframes slideIn {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(0); }
-}
-
-#pong-canvas {
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid #0ff;
-}
-
-.difficulty-btn, .control-btn {
-  margin: 5px;
-}
-
-.difficulty-btn.selected, .control-btn.selected {
-  background: #0ff;
-  color: #000;
-}
-
-.friend, .notification, .group-chat {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 5px;
-}
-
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.dot.online { background: #0f0; }
-.dot.offline { background: #f00; }
-
-.rainbow {
-  animation: rainbow 2s infinite;
-}
-
-@keyframes rainbow {
-  0% { color: #f00; }
-  14% { color: #ff0; }
-  28% { color: #0f0; }
-  42% { color: #0ff; }
-  57% { color: #00f; }
-  71% { color: #f0f; }
-  85% { color: #f00; }
-}
-
-#chat-messages {
-  height: 300px;
-  overflow-y: auto;
-  border: 1px solid #0ff;
-  padding: 10px;
-}
-
-#chat-input-area {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-#chat-input-area.dragover {
-  background: rgba(0, 255, 255, 0.1);
-  border: 2px dashed #0ff;
-}
-
-#tutorial-modal {
-  z-index: 200;
-}
-
-.tutorial-highlight {
-  position: relative;
-  z-index: 150;
-  box-shadow: 0 0 10px 5px #0ff;
-}
-
-.tutorial-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 100;
+.dropdown, .modal {
+  display: none; /* Hide all dropdowns and modals initially */
 }
 
 @media (max-width: 600px) {
@@ -256,6 +104,4 @@ input, select {
   #moon { width: 15px; bottom: 50px; left: 50px; }
   #main-menu { width: 90%; }
   button, input { font-size: 14px; }
-  #pong-canvas { width: 100%; height: auto; aspect-ratio: 3/2; }
-  #chat-input-area { flex-direction: column; }
 }
