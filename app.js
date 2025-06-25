@@ -1,570 +1,916 @@
-.// ===== FIREBASE CONFIG =====
+import { initializeApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updatePassword, deleteUser, onAuthStateChanged } from "firebase/auth";
+import { getDatabase, ref, set, get, onValue, remove, push } from "firebase/database";
+
 const firebaseConfig = {
   apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
   authDomain: "chat-room-22335.firebaseapp.com",
   projectId: "chat-room-22335",
   storageBucket: "chat-room-22335.firebasestorage.app",
   messagingSenderId: "20974926341",
-  appId: "1:20974926341:web:c413eb3122888d6803fa6c",
+  appId: "1:20974926341:web:c413eb3122887d6803fa6c",
   measurementId: "G-WB5QY60EG6"
 };
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-const db = firebase.database();
-
-//////////////////////////////
-// GLOBALS
-let currentUser = null; // {uid, username, code, passwordHash}
-let currentRoomCode = "";
-let rainbowInterval = null;
-let isRickRollMode = false;
-let pongInterval = null;
-let asteroidInterval = null;
-let notificationSoundEnabled = true;
-let musicEnabled = true;
-
-const notificationAudio = new Audio("notification-alert-269289.mp3");
-const backgroundMusic = new Audio("lo-fi-alarm-clock-243766.mp3");
-backgroundMusic.loop = true;
-backgroundMusic.volume = 0.15;
-
-//////////////////////////////
-// UTILS
-function generateAccountCode() {
-  return Math.random().toString(36).substr(2, 10).toUpperCase();
-}
-
-function simpleHash(str) {
-  let hash = 0;
-  if (str.length === 0) return hash;
-  for (let i = 0; i < str.length; i++) {
-    const chr = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
-    hash |= 0;
-  }
-  return hash.toString();
-}
-
-function showToast(msg) {
-  // Simple alert or implement your toast UI here
-  alert(msg);
-}
-
+// Audio
+const bgMusic = document.getElementById("bg-music");
+const notificationSound = document.getElementById("notification-sound");
+const rickrollSound = document.getElementById("rickroll-sound");
 function playNotificationSound() {
-  if (notificationSoundEnabled) {
-    notificationAudio.currentTime = 0;
-    notificationAudio.play();
+  notificationSound.play().catch(() => {});
+}
+
+// Intro Animation
+const intro = document.getElementById("intro");
+const main = document.getElementById("main");
+setTimeout(() => {
+  intro.style.display = "none";
+  main.classList.remove("hidden");
+}, 5500);
+
+// Dropdowns
+document.getElementById("account-dropdown").addEventListener("click", () => {
+  document.getElementById("account-content").classList.toggle("show");
+});
+document.getElementById("friends-dropdown").addEventListener("click", () => {
+  document.getElementById("friends-content").classList.toggle("show");
+});
+
+// Back Buttons
+document.querySelectorAll(".back").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".modal").forEach(modal => modal.classList.add("hidden"));
+  });
+});
+
+// Account System
+function updateAccountDropdown(isSignedIn) {
+  const statusText = document.getElementById("account-status-text");
+  const accountContent = document.getElementById("account-content");
+  accountContent.innerHTML = `<p id="account-status-text">${isSignedIn ? `Signed in as ${auth.currentUser.email.split("@")[0]}` : "You are not signed in."}</p>`;
+  if (isSignedIn) {
+    const actions = ["Sign Out", "Account Status", "Info", "Download Account Data", "Reset Password", "Delete Account"];
+    actions.forEach(action => {
+      const btn = document.createElement("button");
+      btn.textContent = action;
+      btn.id = action.toLowerCase().replace(" ", "-");
+      accountContent.appendChild(btn);
+    });
+    document.getElementById("sign-out").addEventListener("click", () => auth.signOut());
+    document.getElementById("account-status").addEventListener("click", () => {
+      document.getElementById("account-status-modal").classList.remove("hidden");
+      get(ref(db, `users/${auth.currentUser.uid}`)).then(snap => {
+        document.getElementById("current-status").textContent = snap.val().status;
+        document.querySelector(`input[value="${snap.val().status}"]`).checked = true;
+      });
+    });
+    document.getElementById("info").addEventListener("click", () => {
+      document.getElementById("info-modal").classList.remove("hidden");
+      get(ref(db, `users/${auth.currentUser.uid}`)).then(snap => {
+        document.getElementById("info-username").textContent = snap.val().username;
+        document.getElementById("info-friend-id").textContent = snap.val().friendId;
+        document.getElementById("info-scores").textContent = JSON.stringify(snap.val().scores || []);
+        document.getElementById("info-password").textContent = snap.val().password; // Secure in production
+      });
+    });
+    document.getElementById("download-account-data").addEventListener("click", () => {
+      get(ref(db, `users/${auth.currentUser.uid}`)).then(snap => {
+        const data = snap.val();
+        const friends = [];
+        get(ref(db, `friends/${auth.currentUser.uid}/friends`)).then(fSnap => {
+          fSnap.forEach(f => friends.push(f.key));
+          const accountData = `Username: ${data.username}\nPassword: ${data.password}\nAccount Code: ${data.accountCode}\nFriend ID: ${data.friendId}\nFriends: ${friends.join(", ")}\nScores: ${JSON.stringify(data.scores || [])}\nRecent Messages: ${JSON.stringify(data.recentMessages || [])}`;
+          const blob = new Blob([accountData], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "account_data.txt";
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      });
+    });
+    document.getElementById("reset-password").addEventListener("click", () => {
+      document.getElementById("reset-password-modal").classList.remove("hidden");
+      const code = Math.random().toString(36).slice(2, 7);
+      document.getElementById("reset-code").textContent = code;
+    });
+    document.getElementById("delete-account").addEventListener("click", () => {
+      document.getElementById("delete-account-modal").classList.remove("hidden");
+      const code = Math.random().toString(36).slice(2, 9);
+      document.getElementById("delete-code").textContent = code;
+    });
+  } else {
+    accountContent.innerHTML += `
+      <button id="sign-in">Sign In</button>
+      <button id="sign-up">Sign Up</button>
+    `;
+    document.getElementById("sign-in").addEventListener("click", () => {
+      document.getElementById("sign-in-modal").classList.remove("hidden");
+    });
+    document.getElementById("sign-up").addEventListener("click", () => {
+      document.getElementById("sign-up-modal").classList.remove("hidden");
+    });
   }
+  document.getElementById("temp-username").classList.toggle("hidden", isSignedIn);
 }
+onAuthStateChanged(auth, user => updateAccountDropdown(!!user));
 
-//////////////////////////////
-// ACCOUNT SYSTEM
-async function signUp(username, password) {
-  username = username.trim();
-  if (!username || !password) throw "Username and password required";
+document.getElementById("signup-btn").addEventListener("click", () => {
+  const username = document.getElementById("signup-username").value;
+  const password = document.getElementById("signup-password").value;
+  const accountCode = Math.random().toString(36).slice(2, 12).toUpperCase();
+  const friendId = Math.random().toString(36).slice(2, 12).toUpperCase();
+  const email = `${username}@chemchat.com`;
 
-  const snapshot = await db.ref("users").orderByChild("username").equalTo(username).once("value");
-  if (snapshot.exists()) throw "Username already taken";
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(userCredential => {
+      const user = userCredential.user;
+      set(ref(db, `users/${user.uid}`), {
+        username,
+        accountCode,
+        friendId,
+        password, // Secure in production
+        status: "public",
+        scores: [],
+        recentMessages: []
+      });
+      const accountData = `Username: ${username}\nPassword: ${password}\nAccount Code: ${accountCode}\nFriend ID: ${friendId}`;
+      navigator.clipboard.writeText(accountData);
+      alert("Account created! Info copied to clipboard.");
+      document.getElementById("sign-up-modal").classList.add("hidden");
+    })
+    .catch(error => alert(error.message));
+});
 
-  const accountCode = generateAccountCode();
-  const passwordHash = simpleHash(password);
+document.getElementById("signup-download-btn").addEventListener("click", () => {
+  const username = document.getElementById("signup-username").value;
+  const password = document.getElementById("signup-password").value;
+  const accountCode = Math.random().toString(36).slice(2, 12).toUpperCase();
+  const friendId = Math.random().toString(36).slice(2, 12).toUpperCase();
+  const email = `${username}@chemchat.com`;
 
-  const newUserRef = db.ref("users").push();
-  await newUserRef.set({
-    username,
-    passwordHash,
-    accountCode,
-    topScores: [],
-    lowScore: null,
-    last20Messages: [],
-    friends: {},
-    friendRequests: {},
-    friendStatus: "public"
-  });
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(userCredential => {
+      const user = userCredential.user;
+      set(ref(db, `users/${user.uid}`), {
+        username,
+        accountCode,
+        friendId,
+        password, // Secure in production
+        status: "public",
+        scores: [],
+        recentMessages: []
+      });
+      const accountData = `Username: ${username}\nPassword: ${password}\nAccount Code: ${accountCode}\nFriend ID: ${friendId}`;
+      const blob = new Blob([accountData], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "account_data.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      alert("Account created! Data downloaded.");
+      document.getElementById("sign-up-modal").classList.add("hidden");
+    })
+    .catch(error => alert(error.message));
+});
 
-  currentUser = {
-    uid: newUserRef.key,
-    username,
-    accountCode,
-    passwordHash
-  };
+document.getElementById("signin-btn").addEventListener("click", () => {
+  const accountCode = document.getElementById("signin-account-code").value;
+  const password = document.getElementById("signin-password").value;
 
-  updateUserInfoUI();
-  loadFriendRequests();
-  loadFriendsList();
-
-  return currentUser;
-}
-
-async function signIn(accountCode, password) {
-  accountCode = accountCode.trim();
-  if (!accountCode || !password) throw "Account code and password required";
-
-  const passwordHash = simpleHash(password);
-
-  const snapshot = await db.ref("users").orderByChild("accountCode").equalTo(accountCode).once("value");
-  if (!snapshot.exists()) throw "Account not found";
-
-  let user = null;
-  snapshot.forEach(child => {
-    const data = child.val();
-    if (data.passwordHash === passwordHash) {
-      user = {
-        uid: child.key,
-        username: data.username,
-        accountCode: data.accountCode,
-        passwordHash: data.passwordHash
-      };
-    }
-  });
-  if (!user) throw "Incorrect password";
-
-  currentUser = user;
-
-  updateUserInfoUI();
-  loadFriendRequests();
-  loadFriendsList();
-
-  return user;
-}
-
-function signOut() {
-  currentUser = null;
-  currentRoomCode = "";
-  clearUIOnSignOut();
-  stopBackgroundMusic();
-}
-
-//////////////////////////////
-// FRIEND SYSTEM
-async function sendFriendRequest(friendId) {
-  if (!currentUser) throw "Not signed in";
-  if (friendId === currentUser.uid) throw "Cannot friend yourself";
-
-  const friendSnap = await db.ref("users/" + friendId).once("value");
-  if (!friendSnap.exists()) throw "Friend user not found";
-
-  const myFriendsSnap = await db.ref(`users/${currentUser.uid}/friends/${friendId}`).once("value");
-  if (myFriendsSnap.exists()) throw "Already friends";
-
-  const friendReqSnap = await db.ref(`users/${friendId}/friendRequests/${currentUser.uid}`).once("value");
-  if (friendReqSnap.exists()) throw "Friend request already sent";
-
-  await db.ref(`users/${friendId}/friendRequests/${currentUser.uid}`).set({
-    username: currentUser.username,
-    timestamp: Date.now()
-  });
-}
-
-async function acceptFriendRequest(requesterId) {
-  if (!currentUser) throw "Not signed in";
-
-  const updates = {};
-  updates[`users/${currentUser.uid}/friends/${requesterId}`] = true;
-  updates[`users/${requesterId}/friends/${currentUser.uid}`] = true;
-  updates[`users/${currentUser.uid}/friendRequests/${requesterId}`] = null;
-
-  await db.ref().update(updates);
-
-  loadFriendRequests();
-  loadFriendsList();
-}
-
-async function denyFriendRequest(requesterId) {
-  if (!currentUser) throw "Not signed in";
-  await db.ref(`users/${currentUser.uid}/friendRequests/${requesterId}`).remove();
-
-  loadFriendRequests();
-}
-
-async function removeFriend(friendId) {
-  if (!currentUser) throw "Not signed in";
-
-  const updates = {};
-  updates[`users/${currentUser.uid}/friends/${friendId}`] = null;
-  updates[`users/${friendId}/friends/${currentUser.uid}`] = null;
-
-  await db.ref().update(updates);
-
-  loadFriendsList();
-}
-
-async function setFriendStatus(status) {
-  if (!currentUser) throw "Not signed in";
-  if (status !== "public" && status !== "private") throw "Invalid status";
-  await db.ref(`users/${currentUser.uid}`).update({ friendStatus: status });
-}
-
-// Load friend requests and update UI
-function loadFriendRequests() {
-  if (!currentUser) return;
-  db.ref(`users/${currentUser.uid}/friendRequests`).on("value", snapshot => {
-    const requests = snapshot.val() || {};
-    const container = document.getElementById("friendRequestsList");
-    container.innerHTML = "";
-    for (const requesterId in requests) {
-      const req = requests[requesterId];
-      const div = document.createElement("div");
-      div.className = "friend-request";
-      div.textContent = `Request from: ${req.username}`;
-      const acceptBtn = document.createElement("button");
-      acceptBtn.textContent = "Accept";
-      acceptBtn.onclick = () => acceptFriendRequest(requesterId);
-      const denyBtn = document.createElement("button");
-      denyBtn.textContent = "Deny";
-      denyBtn.onclick = () => denyFriendRequest(requesterId);
-      div.appendChild(acceptBtn);
-      div.appendChild(denyBtn);
-      container.appendChild(div);
-    }
-  });
-}
-
-// Load friends and update UI
-function loadFriendsList() {
-  if (!currentUser) return;
-  db.ref(`users/${currentUser.uid}/friends`).on("value", async snapshot => {
-    const friendsObj = snapshot.val() || {};
-    const container = document.getElementById("friendsList");
-    container.innerHTML = "";
-    for (const friendId of Object.keys(friendsObj)) {
-      const snap = await db.ref(`users/${friendId}`).once("value");
-      if (snap.exists()) {
-        const friendData = snap.val();
-        const div = document.createElement("div");
-        div.className = "friend-item";
-        div.textContent = friendData.username;
-        const removeBtn = document.createElement("button");
-        removeBtn.textContent = "Remove";
-        removeBtn.onclick = () => removeFriend(friendId);
-        div.appendChild(removeBtn);
-        container.appendChild(div);
+  get(ref(db, "users")).then(snapshot => {
+    let userId = null;
+    let username = null;
+    snapshot.forEach(child => {
+      if (child.val().accountCode === accountCode) {
+        userId = child.key;
+        username = child.val().username;
       }
+    });
+    if (userId) {
+      signInWithEmailAndPassword(auth, `${username}@chemchat.com`, password)
+        .then(() => {
+          document.getElementById("sign-in-modal").classList.add("hidden");
+        })
+        .catch(error => alert(error.message));
+    } else {
+      alert("Invalid account code.");
     }
   });
-}
+});
 
-//////////////////////////////
-// GROUP CHAT SYSTEM
-async function createGroupChat(name, memberIds) {
-  if (!currentUser) throw "Not signed in";
-  const groupRef = db.ref("groupChats").push();
-  await groupRef.set({
-    name,
-    members: memberIds.reduce((acc, id) => {
-      acc[id] = true;
-      return acc;
-    }, {}),
-    createdBy: currentUser.uid,
-    createdAt: Date.now()
+document.getElementById("reset-password-btn").addEventListener("click", () => {
+  const accountId = document.getElementById("reset-account-id").value;
+  const newPassword = document.getElementById("reset-new-password").value;
+  const confirmPassword = document.getElementById("reset-confirm-password").value;
+  const verifyCode = document.getElementById("reset-verify-code").value;
+  const code = document.getElementById("reset-code").textContent;
+
+  if (newPassword !== confirmPassword) return alert("Passwords do not match.");
+  if (verifyCode !== `chem522[${code}]`) return alert("Invalid verification code.");
+
+  get(ref(db, "users")).then(snapshot => {
+    let userId = null;
+    snapshot.forEach(child => {
+      if (child.val().accountCode === accountId) userId = child.key;
+    });
+    if (userId && userId === auth.currentUser.uid) {
+      updatePassword(auth.currentUser, newPassword)
+        .then(() => {
+          set(ref(db, `users/${userId}/password`), newPassword);
+          alert("Password reset!");
+          document.getElementById("reset-password-modal").classList.add("hidden");
+        })
+        .catch(error => alert(error.message));
+    } else {
+      alert("Invalid account ID.");
+    }
   });
-  return groupRef.key;
-}
+});
 
-async function renameGroupChat(groupId, newName) {
-  if (!currentUser) throw "Not signed in";
-  await db.ref(`groupChats/${groupId}`).update({ name: newName });
-}
+document.getElementById("delete-account-btn").addEventListener("click", () => {
+  const verifyCode = document.getElementById("delete-verify-code").value;
+  const code = document.getElementById("delete-code").textContent;
+  const username = document.getElementById("delete-username").value;
+  const password = document.getElementById("delete-password").value;
+  const accountId = document.getElementById("delete-account-id").value;
 
-async function addMembersToGroupChat(groupId, memberIds) {
-  if (!currentUser) throw "Not signed in";
-  const updates = {};
-  memberIds.forEach(id => {
-    updates[`groupChats/${groupId}/members/${id}`] = true;
+  if (verifyCode !== `chem422[${code}]`) return alert("Invalid verification code.");
+
+  get(ref(db, "users")).then(snapshot => {
+    let userId = null;
+    snapshot.forEach(child => {
+      if (child.val().accountCode === accountId && child.val().username === username) userId = child.key;
+    });
+    if (userId && userId === auth.currentUser.uid) {
+      signInWithEmailAndPassword(auth, `${username}@chemchat.com`, password)
+        .then(() => {
+          remove(ref(db, `users/${userId}`));
+          remove(ref(db, `friends/${userId}`));
+          remove(ref(db, `notifications/${userId}`));
+          deleteUser(auth.currentUser)
+            .then(() => {
+              alert("Account deleted!");
+              document.getElementById("delete-account-modal").classList.add("hidden");
+            })
+            .catch(error => alert(error.message));
+        })
+        .catch(error => alert(error.message));
+    } else {
+      alert("Invalid credentials.");
+    }
   });
-  await db.ref().update(updates);
-}
+});
 
-async function deleteGroupChat(groupId) {
-  if (!currentUser) throw "Not signed in";
-  const snap = await db.ref(`groupChats/${groupId}`).once("value");
-  if (!snap.exists()) throw "Group chat not found";
-  if (snap.val().createdBy !== currentUser.uid) throw "Only creator can delete group chat";
-  await db.ref(`groupChats/${groupId}`).remove();
-}
+document.getElementById("toggle-password").addEventListener("click", () => {
+  document.getElementById("password-verify").classList.remove("hidden");
+});
+document.getElementById("show-password").addEventListener("click", () => {
+  const username = document.getElementById("verify-username").value;
+  const accountId = document.getElementById("verify-account-id").value;
+  const friendId = document.getElementById("verify-friend-id").value;
 
-//////////////////////////////
-// CHAT ROOMS & MESSAGING
-async function createChatRoom(code) {
-  await db.ref(`chatRooms/${code}`).set({
-    members: { [currentUser.uid]: true },
-    createdAt: Date.now()
+  get(ref(db, `users/${auth.currentUser.uid}`)).then(snap => {
+    if (snap.val().username === username && snap.val().accountCode === accountId && snap.val().friendId === friendId) {
+      const passwordEl = document.getElementById("info-password");
+      passwordEl.classList.remove("blurred");
+      document.getElementById("toggle-password").textContent = "👁️‍🗨️";
+      document.getElementById("password-verify").classList.add("hidden");
+    } else {
+      alert("Invalid credentials.");
+    }
   });
-  currentRoomCode = code;
-  loadChatMessages();
-}
+});
 
-async function joinChatRoom(code) {
-  const roomRef = db.ref(`chatRooms/${code}`);
-  const snap = await roomRef.once("value");
-  if (!snap.exists()) throw "Room not found";
-  await roomRef.child("members").child(currentUser.uid).set(true);
-  currentRoomCode = code;
-  loadChatMessages();
-}
+// Friend System
+document.getElementById("add-friend").addEventListener("click", () => {
+  document.getElementById("add-friend-modal").classList.remove("hidden");
+});
+document.getElementById("add-friend-btn").addEventListener("click", () => {
+  const username = document.getElementById("friend-username").value;
+  const friendId = document.getElementById("friend-id").value;
 
-async function leaveChatRoom(code) {
-  const roomRef = db.ref(`chatRooms/${code}/members`);
-  await roomRef.child(currentUser.uid).remove();
-  const snap = await roomRef.once("value");
-  if (!snap.exists() || Object.keys(snap.val()).length === 0) {
-    await db.ref(`chatRooms/${code}`).remove();
-  }
-  currentRoomCode = "";
-  clearChatUI();
-}
+  get(ref(db, "users")).then(snapshot => {
+    let targetUid = null;
+    let correctUsername = null;
+    snapshot.forEach(child => {
+      if (child.val().friendId === friendId && child.val().username.toLowerCase() === username.toLowerCase()) {
+        targetUid = child.key;
+      } else if (child.val().friendId === friendId) {
+        correctUsername = child.val().username;
+      }
+    });
+    if (targetUid) {
+      const notifId = push(ref(db, `notifications/${targetUid}`)).key;
+      set(ref(db, `notifications/${targetUid}/${notifId}`), {
+        type: "friend",
+        from: auth.currentUser.uid,
+        time: Date.now(),
+        status: "pending"
+      });
+      alert("Friend request sent!");
+      playNotificationSound();
+      document.getElementById("add-friend-modal").classList.add("hidden");
+    } else if (correctUsername) {
+      document.getElementById("autocorrect").textContent = `Did you mean: ${correctUsername}?`;
+      document.getElementById("autocorrect").classList.remove("hidden");
+    } else {
+      alert("Invalid friend ID or username.");
+    }
+  });
+});
 
-async function sendMessage(text) {
-  if (!currentUser || !currentRoomCode) throw "Not signed in or not in a room";
-  const message = {
-    from: currentUser.username,
-    uid: currentUser.uid,
-    text,
-    timestamp: Date.now()
-  };
-  await db.ref(`chatRooms/${currentRoomCode}/messages`).push(message);
-}
-
-function loadChatMessages() {
-  if (!currentRoomCode) return;
-  const container = document.getElementById("chatMessages");
+document.getElementById("friends-list").addEventListener("click", () => {
+  if (!auth.currentUser) return alert("Sign in to view friends!");
+  document.getElementById("friends-list-modal").classList.remove("hidden");
+  const container = document.getElementById("friends-container");
   container.innerHTML = "";
-  db.ref(`chatRooms/${currentRoomCode}/messages`).off();
-  db.ref(`chatRooms/${currentRoomCode}/messages`).on("child_added", snapshot => {
-    const msg = snapshot.val();
-    const div = document.createElement("div");
-    div.className = "chat-message";
-    const time = new Date(msg.timestamp).toLocaleTimeString();
-    div.textContent = `[${time}] ${msg.from}: ${msg.text}`;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-    playNotificationSound();
+  get(ref(db, `friends/${auth.currentUser.uid}/friends`)).then(snapshot => {
+    snapshot.forEach(child => {
+      get(ref(db, `users/${child.key}`)).then(user => {
+        const status = user.val().status === "public" && user.val().online ? "online" : "offline";
+        const friendDiv = document.createElement("div");
+        friendDiv.className = "friend";
+        friendDiv.innerHTML = `${user.val().username} <span class="dot ${status}"></span>`;
+        friendDiv.addEventListener("click", () => {
+          const modal = document.createElement("div");
+          modal.className = "modal";
+          modal.innerHTML = `
+            <button class="back">Back</button>
+            <h2>${user.val().username}</h2>
+            <p>Friend ID: ${user.val().friendId}</p>
+            <button id="invite-chat">Invite to Chat</button>
+            <button id="invite-group">Invite to Group</button>
+            <button id="remove-friend">Remove Friend</button>
+          `;
+          document.body.appendChild(modal);
+          modal.querySelector(".back").addEventListener("click", () => modal.remove());
+          modal.querySelector("#remove-friend").addEventListener("click", () => {
+            const confirmModal = document.createElement("div");
+            confirmModal.className = "modal";
+            confirmModal.innerHTML = `
+              <button class="back">Back</button>
+              <h2>Remove ${user.val().username}?</h2>
+              <button id="confirm-remove">Confirm</button>
+              <button id="repeal-remove">Repeal</button>
+            `;
+            document.body.appendChild(confirmModal);
+            confirmModal.querySelector(".back").addEventListener("click", () => confirmModal.remove());
+            confirmModal.querySelector("#confirm-remove").addEventListener("click", () => {
+              remove(ref(db, `friends/${auth.currentUser.uid}/friends/${child.key}`));
+              remove(ref(db, `friends/${child.key}/friends/${auth.currentUser.uid}`));
+              push(ref(db, `notifications/${child.key}`), {
+                type: "friendRemoved",
+                from: auth.currentUser.uid,
+                time: Date.now()
+              });
+              confirmModal.remove();
+              modal.remove();
+            });
+            confirmModal.querySelector("#repeal-remove").addEventListener("click", () => confirmModal.remove());
+          });
+        });
+        container.appendChild(friendDiv);
+      });
+    });
   });
-}
+});
 
-function clearChatUI() {
-  const container = document.getElementById("chatMessages");
-  if(container) container.innerHTML = "";
-}
-
-//////////////////////////////
-// PONG GAME FULL IMPLEMENTATION
-
-const pongCanvas = document.getElementById("pongCanvas");
-const pongCtx = pongCanvas?.getContext("2d");
-
-const pongGame = {
-  roomId: null,
-  playerId: null,
-  paddlePos: 125,
-  opponentPaddlePos: 125,
-  ballX: 250,
-  ballY: 125,
-  ballSpeedX: 4,
-  ballSpeedY: 4,
-  score1: 0,
-  score2: 0,
-  isGameRunning: false,
-
-  init(roomId) {
-    if (!pongCtx) return;
-
-    this.roomId = roomId;
-    this.playerId = currentUser.uid;
-    this.paddlePos = 125;
-    this.opponentPaddlePos = 125;
-    this.score1 = 0;
-    this.score2 = 0;
-    this.ballX = 250;
-    this.ballY = 125;
-    this.ballSpeedX = 4;
-    this.ballSpeedY = 4;
-    this.isGameRunning = true;
-
-    this.listenGameData();
-
-    if (pongInterval) clearInterval(pongInterval);
-    pongInterval = setInterval(() => {
-      this.updateBall();
-      this.syncGameData();
-      this.render();
-    }, 20);
-
-    this.render();
-
-    // Add event listener for mouse to control paddle
-    pongCanvas.onmousemove = (e) => {
-      const rect = pongCanvas.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      this.paddlePos = Math.max(0, Math.min(250, y - 25));
-      this.syncGameData();
-    };
-  },
-
-  async syncGameData() {
-    if (!this.isGameRunning) return;
-    await db.ref(`pongRooms/${this.roomId}/players/${this.playerId}`).set({
-      paddlePos: this.paddlePos
+document.getElementById("notifications").addEventListener("click", () => {
+  if (!auth.currentUser) return alert("Sign in to view notifications!");
+  document.getElementById("notifications-modal").classList.remove("hidden");
+  const container = document.getElementById("notifications-container");
+  container.innerHTML = "";
+  get(ref(db, `notifications/${auth.currentUser.uid}`)).then(snapshot => {
+    snapshot.forEach(child => {
+      get(ref(db, `users/${child.val().from}`)).then(user => {
+        const notifDiv = document.createElement("div");
+        notifDiv.className = "notification";
+        notifDiv.innerHTML = `
+          <p>${user.val().username} sent a ${child.val().type} request at ${new Date(child.val().time).toLocaleTimeString()}</p>
+          <button class="accept">Accept</button>
+          <button class="deny">Deny</button>
+        `;
+        notifDiv.querySelector(".accept").addEventListener("click", () => {
+          if (child.val().type === "friend") {
+            set(ref(db, `friends/${auth.currentUser.uid}/friends/${child.val().from}`), true);
+            set(ref(db, `friends/${child.val().from}/friends/${auth.currentUser.uid}`), true);
+          } else if (child.val().type === "groupInvite") {
+            set(ref(db, `groupChats/${child.val().groupId}/members/${auth.currentUser.uid}`), true);
+          }
+          remove(ref(db, `notifications/${auth.currentUser.uid}/${child.key}`));
+          notifDiv.remove();
+        });
+        notifDiv.querySelector(".deny").addEventListener("click", () => {
+          remove(ref(db, `notifications/${auth.currentUser.uid}/${child.key}`));
+          notifDiv.remove();
+        });
+        container.appendChild(notifDiv);
+        const popup = document.getElementById("notification-popup");
+        popup.innerHTML = notifDiv.innerHTML;
+        popup.classList.remove("hidden");
+        setTimeout(() => popup.classList.add("hidden"), 5000);
+        playNotificationSound();
+      });
     });
-    await db.ref(`pongRooms/${this.roomId}/ball`).set({
-      x: this.ballX,
-      y: this.ballY,
-      speedX: this.ballSpeedX,
-      speedY: this.ballSpeedY
-    });
-    await db.ref(`pongRooms/${this.roomId}/scores`).set({
-      p1: this.score1,
-      p2: this.score2
-    });
-  },
+  });
+});
 
-  listenGameData() {
-    db.ref(`pongRooms/${this.roomId}/players`).on("value", snapshot => {
-      const players = snapshot.val() || {};
-      for (const id in players) {
-        if (id !== this.playerId) {
-          this.opponentPaddlePos = players[id].paddlePos || 125;
-        } else {
-          this.paddlePos = players[id].paddlePos || 125;
+// Group Chat
+document.getElementById("join-group-chat").addEventListener("click", () => {
+  if (!auth.currentUser) return alert("Sign in to join group chats!");
+  document.getElementById("group-chat-modal").classList.remove("hidden");
+  const container = document.getElementById("group-chats-container");
+  container.innerHTML = "";
+  get(ref(db, "groupChats")).then(snapshot => {
+    snapshot.forEach(child => {
+      if (child.val().members[auth.currentUser.uid]) {
+        const groupDiv = document.createElement("div");
+        groupDiv.className = "group-chat";
+        groupDiv.innerHTML = `
+          <p>${child.val().name} (${Object.keys(child.val().members).length} members)</p>
+          <button class="connect">Connect</button>
+        `;
+        groupDiv.querySelector(".connect").addEventListener("click", () => {
+          openChatRoom(child.key, true);
+        });
+        container.appendChild(groupDiv);
+      }
+    });
+  });
+});
+
+document.getElementById("invite-group").addEventListener("click", () => {
+  if (!auth.currentUser) return alert("Sign in to create group chats!");
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.innerHTML = `
+    <button class="back">Back</button>
+    <h2>Create Group Chat</h2>
+    <div id="friends-select"></div>
+    <button id="create-group">Invite</button>
+  `;
+  document.body.appendChild(modal);
+  const friendsSelect = modal.querySelector("#friends-select");
+  get(ref(db, `friends/${auth.currentUser.uid}/friends`)).then(snapshot => {
+    snapshot.forEach(child => {
+      get(ref(db, `users/${child.key}`)).then(user => {
+        const div = document.createElement("div");
+        div.innerHTML = `<label><input type="checkbox" value="${child.key}">${user.val().username}</label>`;
+        friendsSelect.appendChild(div);
+      });
+    });
+  });
+  modal.querySelector(".back").addEventListener("click", () => modal.remove());
+  modal.querySelector("#create-group").addEventListener("click", () => {
+    const selected = Array.from(friendsSelect.querySelectorAll("input:checked")).map(input => input.value);
+    if (selected.length) {
+      const groupId = push(ref(db, "groupChats")).key;
+      const members = { [auth.currentUser.uid]: true };
+      selected.forEach(id => (members[id] = true));
+      set(ref(db, `groupChats/${groupId}`), {
+        name: "Group Chat",
+        members,
+        messages: {}
+      });
+      selected.forEach(id => {
+        push(ref(db, `notifications/${id}`), {
+          type: "groupInvite",
+          groupId,
+          from: auth.currentUser.uid,
+          time: Date.now(),
+          status: "pending"
+        });
+      });
+      modal.remove();
+      alert("Group chat created!");
+    }
+  });
+});
+
+// Chat Room
+document.getElementById("start-chat").addEventListener("click", () => {
+  const roomId = Math.random().toString(36).slice(2, 8).toUpperCase();
+  openChatRoom(roomId);
+});
+document.getElementById("join-chat").addEventListener("click", () => {
+  const roomId = document.getElementById("room-code").value.toUpperCase();
+  if (roomId) openChatRoom(roomId);
+});
+
+function openChatRoom(roomId, isGroup = false) {
+  document.getElementById("chat-room-modal").classList.remove("hidden");
+  document.getElementById("room-code-display").textContent = roomId;
+  document.getElementById("group-chat-dropdown").classList.toggle("hidden", !isGroup);
+  const messages = document.getElementById("chat-messages");
+  messages.innerHTML = "";
+  const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
+  onValue(ref(db, path), snapshot => {
+    messages.innerHTML = "";
+    snapshot.forEach(child => {
+      const msg = child.val();
+      const div = document.createElement("div");
+      div.textContent = `${new Date(msg.time).toLocaleTimeString()}_${msg.sender}: ${msg.text}`;
+      if (msg.text === "brodychem442/haha\\") {
+        document.body.classList.add("rainbow");
+      } else if (msg.text === "brodychem442/stop\\") {
+        document.body.classList.remove("rainbow");
+      } else if (msg.text === "rickroll(<io>)") {
+        document.body.style.backgroundImage = "url('r.png')";
+        document.getElementById("not-rickroll").classList.remove("hidden");
+        document.getElementById("not-rickroll").addEventListener("click", () => {
+          window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        });
+        setInterval(() => {
+          rickrollSound.play().catch(() => {});
+        }, 10000);
+        setInterval(() => {
+          const img = document.createElement("img");
+          img.src = "r.png";
+          img.style.position = "absolute";
+          img.style.width = "100px";
+          img.style.left = "-100px";
+          img.style.top = `${Math.random() * 100}vh`;
+          img.style.transform = `rotate(${Math.random() * 360}deg)`;
+          document.body.appendChild(img);
+          let pos = -100;
+          const move = setInterval(() => {
+            pos += 5;
+            img.style.left = `${pos}px`;
+            if (pos > window.innerWidth) {
+              img.remove();
+              clearInterval(move);
+            }
+          }, 20);
+        }, 5000);
+      } else if (msg.text === "brodychem6(<pong>)") {
+        document.getElementById("pong-modal").classList.remove("hidden");
+      }
+      messages.appendChild(div);
+    });
+  });
+  if (!isGroup) {
+    set(ref(db, `rooms/${roomId}/users/${auth.currentUser?.uid || "guest"}`), true);
+    set(ref(db, `rooms/${roomId}/lastActive`), Date.now());
+    const interval = setInterval(() => {
+      get(ref(db, `rooms/${roomId}/users`)).then(snap => {
+        if (!snap.exists() || Object.keys(snap.val()).length === 0) {
+          setTimeout(() => remove(ref(db, `rooms/${roomId}`)), 5000);
+          clearInterval(interval);
         }
-      }
-    });
-    db.ref(`pongRooms/${this.roomId}/ball`).on("value", snapshot => {
-      const ball = snapshot.val();
-      if (ball) {
-        this.ballX = ball.x;
-        this.ballY = ball.y;
-        this.ballSpeedX = ball.speedX;
-        this.ballSpeedY = ball.speedY;
-      }
-    });
-    db.ref(`pongRooms/${this.roomId}/scores`).on("value", snapshot => {
-      const scores = snapshot.val();
-      if (scores) {
-        this.score1 = scores.p1 || 0;
-        this.score2 = scores.p2 || 0;
-      }
-    });
-  },
-
-  updateBall() {
-    this.ballX += this.ballSpeedX;
-    this.ballY += this.ballSpeedY;
-
-    // Bounce off top and bottom
-    if (this.ballY < 0 || this.ballY > 250) {
-      this.ballSpeedY = -this.ballSpeedY;
-      playPongSound();
-    }
-
-    // Bounce off paddles
-    // Left paddle
-    if (this.ballX < 30 && this.ballY > this.paddlePos && this.ballY < this.paddlePos + 50) {
-      this.ballSpeedX = -this.ballSpeedX;
-      playPongSound();
-    }
-    // Right paddle
-    if (this.ballX > 470 && this.ballY > this.opponentPaddlePos && this.ballY < this.opponentPaddlePos + 50) {
-      this.ballSpeedX = -this.ballSpeedX;
-      playPongSound();
-    }
-
-    // Scoring
-    if (this.ballX < 0) {
-      this.score2++;
-      this.resetBall();
-    } else if (this.ballX > 500) {
-      this.score1++;
-      this.resetBall();
-    }
-  },
-
-  resetBall() {
-    this.ballX = 250;
-    this.ballY = 125;
-    this.ballSpeedX = 4 * (Math.random() > 0.5 ? 1 : -1);
-    this.ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1);
-  },
-
-  render() {
-    if (!pongCtx) return;
-    pongCtx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
-
-    // Draw background
-    pongCtx.fillStyle = "#000";
-    pongCtx.fillRect(0, 0, pongCanvas.width, pongCanvas.height);
-
-    // Draw paddles
-    pongCtx.fillStyle = "white";
-    pongCtx.fillRect(10, this.paddlePos, 10, 50); // Left paddle
-    pongCtx.fillRect(480, this.opponentPaddlePos, 10, 50); // Right paddle
-
-    // Draw ball
-    pongCtx.beginPath();
-    pongCtx.arc(this.ballX, this.ballY, 7, 0, Math.PI * 2);
-    pongCtx.fill();
-
-    // Draw scores
-    pongCtx.font = "24px monospace";
-    pongCtx.fillText(this.score1, 200, 30);
-    pongCtx.fillText(this.score2, 300, 30);
-  },
-
-   stop() {
-    this.isGameRunning = false;
-    clearInterval(pongInterval);
-    pongCanvas.onmousemove = null;
-    if (pongCtx) {
-      pongCtx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
-    }
-  }
-};
-
-function playPongSound() {
-  if (notificationSoundEnabled) {
-    notificationAudio.currentTime = 0;
-    notificationAudio.play();
+      });
+    }, 1000);
   }
 }
 
-
-// Get the Pong canvas and context
-const pongCanvas = document.getElementById("pongCanvas");
-const pongCtx = pongCanvas ? pongCanvas.getContext("2d") : null;
-
-// Mouse move handler to control player's paddle
-if (pongCanvas) {
-  pongCanvas.addEventListener("mousemove", (event) => {
-    // Calculate paddle position based on mouse Y relative to canvas
-    const rect = pongCanvas.getBoundingClientRect();
-    let mouseY = event.clientY - rect.top;
-    // Keep paddle inside canvas bounds
-    pongGame.paddlePos = Math.max(0, Math.min(mouseY - 25, pongCanvas.height - 50));
+document.getElementById("chat-send").addEventListener("click", () => {
+  const input = document.getElementById("chat-input");
+  const roomId = document.getElementById("room-code-display").textContent;
+  const isGroup = !document.getElementById("group-chat-dropdown").classList.contains("hidden");
+  const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
+  push(ref(db, path), {
+    sender: auth.currentUser?.email.split("@")[0] || document.getElementById("temp-username").value || "Guest",
+    text: input.value,
+    time: Date.now()
   });
+  input.value = "";
+});
+
+// Pong Game
+const pongModal = document.getElementById("pong-modal");
+const canvas = document.getElementById("pong-canvas");
+const ctx = canvas.getContext("2d");
+const difficultyButtons = document.querySelectorAll(".difficulty-btn");
+const phoneControls = document.querySelectorAll(".control-btn");
+const confirmDifficulty = document.getElementById("confirm-difficulty");
+const confirmControl = document.getElementById("confirm-control");
+
+canvas.width = 600;
+canvas.height = 400;
+let difficulty = "normal";
+let paddleSpeed = 5;
+let ballSpeed = 5;
+let controlMethod = "keyboard";
+
+if (/Mobi|Android|iPhone/.test(navigator.userAgent)) {
+  document.getElementById("difficulty-menu").classList.add("hidden");
+  document.getElementById("phone-controls").classList.remove("hidden");
 }
 
-// Start the Pong game loop
-function startPongGame(roomId) {
-  pongGame.init(roomId);
-  pongGame.start();
+difficultyButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    difficultyButtons.forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    difficulty = btn.id;
+    if (difficulty === "easy") {
+      paddleSpeed = 4;
+      ballSpeed = 3;
+    } else if (difficulty === "normal") {
+      paddleSpeed = 5;
+      ballSpeed = 5;
+    } else {
+      paddleSpeed = 6;
+      ballSpeed = 7;
+    }
+  });
+});
 
-  // Game update loop at 50 FPS
-  pongInterval = setInterval(() => {
-    pongGame.updateBall();
-    pongGame.syncGameData();
-    pongGame.render();
-  }, 20);
+phoneControls.forEach(btn => {
+  btn.addEventListener("click", () => {
+    phoneControls.forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    controlMethod = btn.id;
+  });
+});
+
+confirmDifficulty.addEventListener("click", () => {
+  document.getElementById("difficulty-menu").classList.add("hidden");
+  canvas.classList.remove("hidden");
+  startPong();
+});
+
+confirmControl.addEventListener("click", () => {
+  document.getElementById("phone-controls").classList.add("hidden");
+  canvas.classList.remove("hidden");
+  startPong();
+});
+
+const paddleWidth = 10;
+const paddleHeight = 60;
+let playerPaddle = { x: 10, y: canvas.height / 2 - paddleHeight / 2, score: 0 };
+let aiPaddle = { x: canvas.width - 20, y: canvas.height / 2 - paddleHeight / 2, score: 0 };
+let ball = { x: canvas.width / 2, y: canvas.height / 2, dx: ballSpeed, dy: ballSpeed };
+
+function startPong() {
+  ctx.fillStyle = "#0ff";
+  ctx.font = "20px Orbitron";
+  ctx.fillText("GO!", canvas.width / 2 - 20, canvas.height / 2);
+  setTimeout(() => {
+    gameLoop();
+  }, 1000);
 }
 
-// Stop the Pong game and clean up
-function stopPongGame() {
-  pongGame.stop();
-  clearInterval(pongInterval);
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#0ff";
+  ctx.fillRect(playerPaddle.x, playerPaddle.y, paddleWidth, paddleHeight);
+  ctx.fillRect(aiPaddle.x, aiPaddle.y, paddleWidth, paddleHeight);
+  ctx.fillRect(ball.x, ball.y, 10, 10);
+  ctx.fillText(playerPaddle.score, canvas.width / 4, 30);
+  ctx.fillText(aiPaddle.score, 3 * canvas.width / 4, 30);
+  ctx.setLineDash([5, 15]);
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.strokeStyle = "#0ff";
+  ctx.stroke();
+
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+  if (ball.y <= 0 || ball.y >= canvas.height - 10) ball.dy *= -1;
+  if (ball.x <= playerPaddle.x + paddleWidth && ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + paddleHeight) {
+    ball.dx *= -1;
+  }
+  if (ball.x >= aiPaddle.x - 10 && ball.y >= aiPaddle.y && ball.y <= aiPaddle.y + paddleHeight) {
+    ball.dx *= -1;
+  }
+  if (ball.x <= 0) {
+    aiPaddle.score++;
+    resetBall();
+  }
+  if (ball.x >= canvas.width - 10) {
+    playerPaddle.score++;
+    resetBall();
+  }
+  if (playerPaddle.score >= 10 || aiPaddle.score >= 10) {
+    const winner = playerPaddle.score >= 10 ? "You" : "AI";
+    alert(`Game Over! ${winner} Win!`);
+    get(ref(db, `users/${auth.currentUser?.uid}`)).then(snap => {
+      const scores = snap.val().scores || [];
+      scores.push({ pong: playerPaddle.score });
+      set(ref(db, `users/${auth.currentUser.uid}/scores`), scores);
+    });
+    pongModal.classList.add("hidden");
+    return;
+  }
+
+  if (ball.y > aiPaddle.y + paddleHeight / 2) aiPaddle.y += paddleSpeed * 0.8;
+  if (ball.y < aiPaddle.y + paddleHeight / 2) aiPaddle.y -= paddleSpeed * 0.8;
+
+  if (controlMethod === "keyboard") {
+    document.addEventListener("keydown", e => {
+      if (e.key === "w" || e.key === "ArrowUp") playerPaddle.y -= paddleSpeed;
+      if (e.key === "s" || e.key === "ArrowDown") playerPaddle.y += paddleSpeed;
+      if (playerPaddle.y < 0) playerPaddle.y = 0;
+      if (playerPaddle.y > canvas.height - paddleHeight) playerPaddle.y = canvas.height - paddleHeight;
+    });
+  } else if (controlMethod === "tilt-control") {
+    window.addEventListener("deviceorientation", e => {
+      playerPaddle.y += e.beta / 10;
+      if (playerPaddle.y < 0) playerPaddle.y = 0;
+      if (playerPaddle.y > canvas.height - paddleHeight) playerPaddle.y = canvas.height - paddleHeight;
+    });
+  } else if (controlMethod === "touch-control") {
+    canvas.addEventListener("touchmove", e => {
+      const touch = e.touches[0];
+      playerPaddle.y = touch.clientY - canvas.offsetTop - paddleHeight / 2;
+      if (playerPaddle.y < 0) playerPaddle.y = 0;
+      if (playerPaddle.y > canvas.height - paddleHeight) playerPaddle.y = canvas.height - paddleHeight;
+    });
+  } else if (controlMethod === "arrow-control") {
+    const up = document.createElement("button");
+    up.textContent = "↑";
+    up.style.position = "fixed";
+    up.style.bottom = "100px";
+    up.style.right = "20px";
+    const down = document.createElement("button");
+    down.textContent = "↓";
+    down.style.position = "fixed";
+    down.style.bottom = "50px";
+    down.style.right = "20px";
+    document.body.appendChild(up);
+    document.body.appendChild(down);
+    up.addEventListener("touchstart", () => playerPaddle.y -= paddleSpeed);
+    down.addEventListener("touchstart", () => playerPaddle.y += paddleSpeed);
+    pongModal.addEventListener("click", () => {
+      up.remove();
+      down.remove();
+    }, { once: true });
+  }
+
+  requestAnimationFrame(gameLoop);
 }
 
-// Example: to start pong in room "room123", call:
-// startPongGame("room123");
+function resetBall() {
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+  ball.dx = ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+  ball.dy = ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+}
 
-// You may want to call stopPongGame() when leaving or ending the game.
+// Tutorial
+document.getElementById("tutorial").addEventListener("click", () => {
+  startTutorial();
+});
 
+const tutorialSteps = [
+  {
+    text: "Welcome to Chem Chat 1.9! Click the Account dropdown to sign in or sign up.",
+    element: "#account-dropdown",
+    action: () => document.getElementById("account-content").classList.add("show")
+  },
+  {
+    text: "Click Sign Up to create an account. Enter a username and password.",
+    element: "#sign-up",
+    action: () => {
+      document.getElementById("account-content").classList.add("show");
+      document.getElementById("sign-up-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "Sign in with your account code and password.",
+    element: "#sign-in",
+    action: () => {
+      document.getElementById("sign-up-modal").classList.add("hidden");
+      document.getElementById("account-content").classList.add("show");
+      document.getElementById("sign-in-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "Change your account status to Public or Private.",
+    element: "#account-status",
+    action: () => {
+      document.getElementById("sign-in-modal").classList.add("hidden");
+      updateAccountDropdown(true); // Simulate signed-in state
+      document.getElementById("account-status-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "View your account info, including username, friend ID, and scores.",
+    element: "#info",
+    action: () => {
+      document.getElementById("account-status-modal").classList.add("hidden");
+      document.getElementById("info-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "Add a friend using their username and friend ID.",
+    element: "#add-friend",
+    action: () => {
+      document.getElementById("info-modal").classList.add("hidden");
+      document.getElementById("friends-content").classList.add("show");
+      document.getElementById("add-friend-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "View your friends list and their online status.",
+    element: "#friends-list",
+    action: () => {
+      document.getElementById("add-friend-modal").classList.add("hidden");
+      document.getElementById("friends-content").classList.add("show");
+      document.getElementById("friends-list-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "Check notifications for friend requests and group invites.",
+    element: "#notifications",
+    action: () => {
+      document.getElementById("friends-list-modal").classList.add("hidden");
+      document.getElementById("friends-content").classList.add("show");
+      document.getElementById("notifications-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "Create a group chat by inviting friends.",
+    element: "#invite-group",
+    action: () => {
+      document.getElementById("notifications-modal").classList.add("hidden");
+      document.getElementById("friends-content").classList.add("show");
+      document.getElementById("invite-group").click();
+    }
+  },
+  {
+    text: "Join a group chat you’ve been invited to.",
+    element: "#join-group-chat",
+    action: () => {
+      document.querySelectorAll(".modal").forEach(modal => modal.classList.add("hidden"));
+      document.getElementById("group-chat-modal").classList.remove("hidden");
+    }
+  },
+  {
+    text: "Start a new chat room with a random code.",
+    element: "#start-chat",
+    action: () => {
+      document.getElementById("group-chat-modal").classList.add("hidden");
+      document.getElementById("chat-room-modal").classList.remove("hidden");
+      document.getElementById("room-code-display").textContent = "ABC123";
+    }
+  },
+  {
+    text: "Join a chat room using a room code.",
+    element: "#join-chat",
+    action: () => {
+      document.getElementById("chat-room-modal").classList.add("hidden");
+      document.getElementById("room-code").value = "ABC123";
+    }
+  },
+  {
+    text: "You’re all set! Explore Chem Chat 1.9 and have fun!",
+    element: null,
+    action: () => {
+      document.getElementById("room-code").value = "";
+      document.querySelectorAll(".modal").forEach(modal => modal.classList.add("hidden"));
+    }
+  }
+];
 
+let currentStep = 0;
+
+function startTutorial() {
+  document.getElementById("tutorial-modal").classList.remove("hidden");
+  const overlay = document.createElement("div");
+  overlay.className = "tutorial-overlay";
+  document.body.appendChild(overlay);
+  updateTutorialStep();
+}
+
+function updateTutorialStep() {
+  const step = tutorialSteps[currentStep];
+  document.getElementById("tutorial-text").textContent = step.text;
+  document.getElementById("tutorial-prev").disabled = currentStep === 0;
+  document.getElementById("tutorial-next").disabled = currentStep === tutorialSteps.length - 1;
+  document.querySelectorAll(".tutorial-highlight").forEach(el => el.classList.remove("tutorial-highlight"));
+  if (step.element) {
+    const el = document.querySelector(step.element);
+    if (el) el.classList.add("tutorial-highlight");
+  }
+  if (step.action) step.action();
+}
+
+document.getElementById("tutorial-prev").addEventListener("click", () => {
+  if (currentStep > 0) {
+    currentStep--;
+    updateTutorialStep();
+  }
+});
+
+document.getElementById("tutorial-next").addEventListener("click", () => {
+  if (currentStep < tutorialSteps.length - 1) {
+    currentStep++;
+    updateTutorialStep();
+  }
+});
+
+document.getElementById("tutorial-exit").addEventListener("click", () => {
+  document.getElementById("tutorial-modal").classList.add("hidden");
+  document.querySelectorAll(".modal").forEach(modal => modal.classList.add("hidden"));
+  document.querySelectorAll(".dropdown-content").forEach(d => d.classList.remove("show"));
+  document.querySelectorAll(".tutorial-highlight").forEach(el => el.classList.remove("tutorial-highlight"));
+  document.querySelector(".tutorial-overlay")?.remove();
+  currentStep = 0;
+});
