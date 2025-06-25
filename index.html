@@ -6,6 +6,9 @@
   <title>Chem Chat 1.9</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
 </head>
 <body>
   <div id="intro">
@@ -32,12 +35,13 @@
         <p id="account-status-text">You are not signed in.</p>
         <button id="sign-in">Sign In</button>
         <button id="sign-up">Sign Up</button>
+        <button id="sign-out" class="hidden">Sign Out</button>
       </div>
     </div>
     <div id="friends-dropdown" class="dropdown">
       <button>Friends</button>
       <div id="friends-content" class="dropdown-content hidden">
-        <button id="friends-list">Friends List</button>
+        <div id="friends-list"></div>
         <button id="add-friend">Add Friend</button>
         <button id="invite-group">Invite to Group Chat</button>
         <button id="notifications">Notifications</button>
@@ -66,8 +70,8 @@
       <button class="back">Back</button>
       <h2>Chat Room: <span id="room-code-display"></span></h2>
       <div id="chat-messages"></div>
-      <div id="chat-input-area" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <input id="chat-input" type="text" placeholder="Type a message or drag .txt file">
+      <div id="chat-input-area">
+        <input id="chat-input" type="text" placeholder="Type a message">
         <button id="chat-send">Send</button>
         <button id="chat-add">Add</button>
       </div>
@@ -79,16 +83,15 @@
           <button id="add-users">Add Users</button>
         </div>
       </div>
-      <button id="not-rickroll" class="hidden">Not a Rick Roll</button>
     </div>
-    <div id="settings-modal" class="modal" style="display: none;">
+    <div id="settings-modal" class="modal hidden">
       <button class="back">Back</button>
       <h2>Settings</h2>
       <label><input type="checkbox" id="bg-music-toggle" checked> Background Music</label>
       <label><input type="checkbox" id="notif-sound-toggle" checked> Notification Sound</label>
       <button id="save-settings">Save</button>
     </div>
-    <div id="tutorial-modal" class="modal" style="display: none;">
+    <div id="tutorial-modal" class="modal hidden">
       <button class="back">Back</button>
       <button id="tutorial-exit">Exit</button>
       <h2>Tutorial</h2>
@@ -96,7 +99,7 @@
       <button id="tutorial-prev">Previous</button>
       <button id="tutorial-next">Next</button>
     </div>
-    <div id="notification-popup" style="display: none;"></div>
+    <div id="notification-popup" class="hidden"></div>
   </div>
   <audio id="bg-music" src="lo-fi-alarm-clock-243766 (1).mp3" loop></audio>
   <audio id="notification-sound" src="notification-alert-269289.mp3"></audio>
