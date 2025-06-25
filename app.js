@@ -3,6 +3,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const main = document.getElementById("main");
   const bgMusic = document.getElementById("bg-music");
   let bgMusicEnabled = true;
+  let isSignedIn = false;
+  let friends = [];
 
   setTimeout(() => {
     intro.style.display = "none";
@@ -10,12 +12,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bgMusicEnabled) bgMusic.play().catch(() => {});
   }, 5500);
 
+  // Replace with your Firebase config from the Firebase Console
+  const firebaseConfig = {
+    apiKey: "your-api-key",
+    authDomain: "your-auth-domain",
+    projectId: "your-project-id",
+    storageBucket: "your-storage-bucket",
+    messagingSenderId: "your-messaging-sender-id",
+    appId: "your-app-id"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
   // Main menu button functionality
   document.getElementById("start-chat").addEventListener("click", () => {
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     document.getElementById("room-code-display").textContent = roomCode;
     document.getElementById("chat-room-modal").classList.remove("hidden");
-    document.getElementById("chat-messages").innerHTML = "";
+    loadChatMessages(roomCode);
   });
 
   document.getElementById("join-chat").addEventListener("click", () => {
@@ -23,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (roomCode) {
       document.getElementById("room-code-display").textContent = roomCode;
       document.getElementById("chat-room-modal").classList.remove("hidden");
-      document.getElementById("chat-messages").innerHTML = "";
+      loadChatMessages(roomCode);
     } else {
       alert("Please enter a room code!");
     }
@@ -34,11 +50,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("settings").addEventListener("click", () => {
-    alert("Settings clicked! (Placeholder)");
+    document.getElementById("settings-modal").classList.remove("hidden");
   });
 
   document.getElementById("tutorial").addEventListener("click", () => {
-    alert("Tutorial clicked! (Placeholder)");
+    document.getElementById("tutorial-modal").classList.remove("hidden");
+    document.getElementById("tutorial-text").textContent = "Welcome to Chem Chat! Use the menu to start a chat or play Pong.";
   });
 
   document.getElementById("play-pong").addEventListener("click", () => {
@@ -54,29 +71,59 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("sign-in").addEventListener("click", () => {
-    alert("Sign In clicked! (Placeholder)");
+    const username = prompt("Enter username:");
+    if (username) {
+      isSignedIn = true;
+      document.getElementById("account-status-text").textContent = `Signed in as ${username}.`;
+      document.getElementById("sign-in").classList.add("hidden");
+      document.getElementById("sign-up").classList.add("hidden");
+      document.getElementById("sign-out").classList.remove("hidden");
+    }
   });
 
   document.getElementById("sign-up").addEventListener("click", () => {
-    alert("Sign Up clicked! (Placeholder)");
+    const username = prompt("Choose a username:");
+    if (username) {
+      isSignedIn = true;
+      document.getElementById("account-status-text").textContent = `Signed in as ${username}.`;
+      document.getElementById("sign-in").classList.add("hidden");
+      document.getElementById("sign-up").classList.add("hidden");
+      document.getElementById("sign-out").classList.remove("hidden");
+    }
+  });
+
+  document.getElementById("sign-out").addEventListener("click", () => {
+    isSignedIn = false;
+    document.getElementById("account-status-text").textContent = "You are not signed in.";
+    document.getElementById("sign-in").classList.remove("hidden");
+    document.getElementById("sign-up").classList.remove("hidden");
+    document.getElementById("sign-out").classList.add("hidden");
   });
 
   // Friends dropdown functionality
   document.getElementById("friends-dropdown").addEventListener("click", () => {
     const content = document.getElementById("friends-content");
     content.classList.toggle("show");
-  });
-
-  document.getElementById("friends-list").addEventListener("click", () => {
-    alert("Friends List clicked! (Placeholder)");
+    updateFriendsList();
   });
 
   document.getElementById("add-friend").addEventListener("click", () => {
-    alert("Add Friend clicked! (Placeholder)");
+    const friendName = prompt("Enter friend’s name:");
+    if (friendName && !friends.includes(friendName)) {
+      friends.push(friendName);
+      updateFriendsList();
+      showNotification(`Added ${friendName} as a friend!`);
+    } else if (friends.includes(friendName)) {
+      alert("Friend already added!");
+    }
   });
 
   document.getElementById("invite-group").addEventListener("click", () => {
-    alert("Invite to Group Chat clicked! (Placeholder)");
+    if (friends.length > 0) {
+      alert("Invited friends to group chat! (Placeholder)");
+    } else {
+      alert("No friends to invite!");
+    }
   });
 
   document.getElementById("notifications").addEventListener("click", () => {
@@ -91,18 +138,58 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("chat-send").addEventListener("click", () => {
     const chatInput = document.getElementById("chat-input");
     const message = chatInput.value.trim();
-    if (message) {
-      const chatMessages = document.getElementById("chat-messages");
-      const messageDiv = document.createElement("div");
-      messageDiv.textContent = message;
-      chatMessages.appendChild(messageDiv);
+    const roomCode = document.getElementById("room-code-display").textContent;
+    if (message && isSignedIn) {
+      sendMessage(roomCode, message);
       chatInput.value = "";
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+    } else if (!isSignedIn) {
+      alert("Please sign in to send messages!");
     }
   });
 
   document.getElementById("chat-add").addEventListener("click", () => {
-    alert("Add user to chat! (Placeholder)");
+    if (isSignedIn) {
+      alert("Add user to chat! (Placeholder)");
+    } else {
+      alert("Please sign in to add users!");
+    }
+  });
+
+  // Settings modal functionality
+  document.querySelector("#settings-modal .back").addEventListener("click", () => {
+    document.getElementById("settings-modal").classList.add("hidden");
+  });
+
+  document.getElementById("save-settings").addEventListener("click", () => {
+    bgMusicEnabled = document.getElementById("bg-music-toggle").checked;
+    if (bgMusicEnabled) bgMusic.play().catch(() => {});
+    else bgMusic.pause();
+    document.getElementById("settings-modal").classList.add("hidden");
+  });
+
+  // Tutorial modal functionality
+  document.querySelector("#tutorial-modal .back").addEventListener("click", () => {
+    document.getElementById("tutorial-modal").classList.add("hidden");
+  });
+
+  document.getElementById("tutorial-exit").addEventListener("click", () => {
+    document.getElementById("tutorial-modal").classList.add("hidden");
+  });
+
+  let tutorialStep = 0;
+  const tutorialTexts = [
+    "Welcome to Chem Chat! Use the menu to start a chat or play Pong.",
+    "Sign in to access all features via the Account dropdown.",
+    "Add friends and invite them to group chats from the Friends menu.",
+    "Enjoy the game and explore settings for customization."
+  ];
+  document.getElementById("tutorial-next").addEventListener("click", () => {
+    tutorialStep = (tutorialStep + 1) % tutorialTexts.length;
+    document.getElementById("tutorial-text").textContent = tutorialTexts[tutorialStep];
+  });
+  document.getElementById("tutorial-prev").addEventListener("click", () => {
+    tutorialStep = (tutorialStep - 1 + tutorialTexts.length) % tutorialTexts.length;
+    document.getElementById("tutorial-text").textContent = tutorialTexts[tutorialStep];
   });
 
   // Pong game functionality
@@ -119,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let opponentPaddle = { x: pongCanvas.width - 20, y: pongCanvas.height / 2 - 30, score: 0 };
   let ball = { x: pongCanvas.width / 2, y: pongCanvas.height / 2, dx: 5, dy: 5 };
   let gameActive = false;
-  let ballSpeed = 2.5; // Default to Normal speed
+  let ballSpeed = 2.5;
 
   function resetGameState() {
     playerPaddle.score = 0;
@@ -127,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gameActive = false;
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("normal").classList.add("selected");
-    ballSpeed = 2.5; // Reset to Normal speed
+    ballSpeed = 2.5;
     resetBall();
   }
 
@@ -154,7 +241,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillStyle = "#0ff";
     ctx.fillRect(playerPaddle.x, playerPaddle.y, 10, 60);
 
-    // Improved AI: Predict ball's future position
     const timeToReachPaddle = (pongCanvas.width - opponentPaddle.x - ball.x) / Math.abs(ball.dx);
     const predictedY = ball.y + ball.dy * timeToReachPaddle;
     opponentPaddle.y += (predictedY - (opponentPaddle.y + 30)) * 0.15;
@@ -166,8 +252,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillRect(ball.x, ball.y, 10, 10);
     ctx.fillText(playerPaddle.score, pongCanvas.width / 4, 30);
     ctx.fillText(opponentPaddle.score, 3 * pongCanvas.width / 4, 30);
-    ball.x += ball.dx / 2; // Halve the speed increment
-    ball.y += ball.dy / 2; // Halve the speed increment
+    ball.x += ball.dx / 2;
+    ball.y += ball.dy / 2;
     if (ball.y <= 0 || ball.y >= pongCanvas.height - 10) ball.dy *= -1;
     if (ball.x <= playerPaddle.x + 10 && ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + 60) ball.dx *= -1;
     if (ball.x >= opponentPaddle.x - 10 && ball.y >= opponentPaddle.y && ball.y <= opponentPaddle.y + 60) ball.dx *= -1;
@@ -212,20 +298,74 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("easy").addEventListener("click", () => {
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("easy").classList.add("selected");
-    ballSpeed = 1; // Reduced from 2
+    ballSpeed = 1;
   });
 
   document.getElementById("normal").addEventListener("click", () => {
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("normal").classList.add("selected");
-    ballSpeed = 2.5; // Reduced from 5
+    ballSpeed = 2.5;
   });
 
   document.getElementById("hard").addEventListener("click", () => {
     document.querySelectorAll(".difficulty-btn").forEach(btn => btn.classList.remove("selected"));
     document.getElementById("hard").classList.add("selected");
-    ballSpeed = 4; // Reduced from 8
+    ballSpeed = 4;
   });
 
   document.getElementById("confirm-difficulty").addEventListener("click", startPongGame);
+
+  // Chat functions
+  function sendMessage(roomCode, message) {
+    if (isSignedIn) {
+      const chatRef = db.collection("chatRooms").doc(roomCode).collection("messages");
+      chatRef.add({
+        text: message,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        user: document.getElementById("account-status-text").textContent.replace("Signed in as ", "").replace(".", "")
+      }).then(() => {
+        loadChatMessages(roomCode);
+      }).catch((error) => {
+        console.error("Error sending message: ", error);
+      });
+    }
+  }
+
+  function loadChatMessages(roomCode) {
+    const chatMessages = document.getElementById("chat-messages");
+    chatMessages.innerHTML = "";
+    const chatRef = db.collection("chatRooms").doc(roomCode).collection("messages")
+      .orderBy("timestamp", "asc");
+    chatRef.onSnapshot((snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const messageDiv = document.createElement("div");
+          const data = change.doc.data();
+          messageDiv.textContent = `${data.user}: ${data.text}`;
+          chatMessages.appendChild(messageDiv);
+        }
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, (error) => {
+      console.error("Error loading messages: ", error);
+    });
+  }
+
+  // Friends functions
+  function updateFriendsList() {
+    const friendsList = document.getElementById("friends-list");
+    friendsList.innerHTML = "";
+    friends.forEach(friend => {
+      const friendDiv = document.createElement("div");
+      friendDiv.textContent = friend;
+      friendsList.appendChild(friendDiv);
+    });
+  }
+
+  function showNotification(message) {
+    const notification = document.getElementById("notification-popup");
+    notification.textContent = message;
+    notification.classList.remove("hidden");
+    setTimeout(() => notification.classList.add("hidden"), 3000);
+  }
 });
