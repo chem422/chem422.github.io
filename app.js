@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bgMusicEnabled) bgMusic.play().catch(() => {});
   }, 5500);
 
-  // Button functionality
+  // Main menu button functionality
   document.getElementById("start-chat").addEventListener("click", () => {
     alert("Start Chat clicked! (Placeholder)");
   });
@@ -29,5 +29,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("tutorial").addEventListener("click", () => {
     alert("Tutorial clicked! (Placeholder)");
+  });
+
+  // Account dropdown functionality
+  document.getElementById("account-dropdown").addEventListener("click", () => {
+    const content = document.getElementById("account-content");
+    content.classList.toggle("show");
+  });
+
+  document.getElementById("sign-in").addEventListener("click", () => {
+    alert("Sign In clicked! (Placeholder)");
+  });
+
+  document.getElementById("sign-up").addEventListener("click", () => {
+    alert("Sign Up clicked! (Placeholder)");
+  });
+
+  // Friends dropdown functionality
+  document.getElementById("friends-dropdown").addEventListener("click", () => {
+    const content = document.getElementById("friends-content");
+    content.classList.toggle("show");
+  });
+
+  document.getElementById("friends-list").addEventListener("click", () => {
+    alert("Friends List clicked! (Placeholder)");
+  });
+
+  document.getElementById("add-friend").addEventListener("click", () => {
+    alert("Add Friend clicked! (Placeholder)");
+  });
+
+  document.getElementById("invite-group").addEventListener("click", () => {
+    alert("Invite to Group Chat clicked! (Placeholder)");
+  });
+
+  document.getElementById("notifications").addEventListener("click", () => {
+    alert("Notifications clicked! (Placeholder)");
   });
 });
