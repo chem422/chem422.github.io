@@ -159,11 +159,26 @@ input, select {
 }
 
 #phone-controls {
-  display: none; /* Hidden by default, shown on mobile */
+  display: none;
 }
 
 #phone-controls.active {
   display: block;
+}
+
+#chat-messages {
+  height: 200px;
+  overflow-y: auto;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #0ff;
+  border-radius: 5px;
+}
+
+#chat-input-area {
+  display: flex;
+  gap: 5px;
 }
 
 #notification-popup, #pong-cancel, #not-rickroll {
@@ -182,4 +197,5 @@ input, select {
   #account-dropdown { right: 5%; }
   #friends-dropdown { right: 45%; }
   #pong-canvas { width: 90vw; height: 60vw; }
+  #chat-messages { height: 150px; }
 }
