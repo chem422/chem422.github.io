@@ -1,421 +1,664 @@
-// Chem Chat 1.9 FULL JavaScript
-
-// =========== Firebase Initialization ===========
+// === FIREBASE CONFIGURATION & INIT ===
 const firebaseConfig = {
   apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
   authDomain: "chat-room-22335.firebaseapp.com",
   projectId: "chat-room-22335",
   storageBucket: "chat-room-22335.firebasestorage.app",
   messagingSenderId: "20974926341",
-  appId: "1:20974926341:web:c413eb3122887d6803fa6c",
-  measurementId: "G-WB5QY60EG6",
+  appId: "1:20974926341:web:c413eb3122888d6803fa6c",
+  measurementId: "G-WB5QY60EG6"
 };
-// Initialize Firebase
+
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebase.database();
+const auth = firebase.auth();
 
-// =========== Global State ===========
-let currentUser = null;  // user object: {username, password, code, scores, friends, etc}
-let currentRoom = null;
-let pongRoom = null;
-let asteroidGameState = null;
-let friendList = [];
-let groupChats = [];
-let chatHistory = [];
-let rainbowMode = false;
-let rickrollMode = false;
-let backgroundMusicPlaying = false;
+// === GLOBAL VARIABLES ===
+let currentUser = null;      // Current signed-in user info { username, uid, code }
+let currentRoomCode = "";    // Current chat room or group code
+let rainbowInterval = null;
+let isRickRollMode = false;
+let pongInterval = null;
+let asteroidInterval = null;
+let bgMusic = new Audio("https://cdn.pixabay.com/audio/2023/03/30/audio_0b9d97be10.mp3");
+let notificationAudio = new Audio("https://cdn.pixabay.com/download/audio/2022/02/23/audio_b38ec1d2d4.mp3");
+let rickrollAudio = new Audio("https://archive.org/download/NeverGonnaGiveYouUpHQ/Never%20Gonna%20Give%20You%20Up%20-%20HQ.mp3");
+let notificationSoundEnabled = true;
 
-// =========== Utility Functions ===========
+// === ACCOUNT SYSTEM ===
 
-// Generate random alphanumeric code
-function generateCode(length = 10) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let code = "";
-  for (let i = 0; i < length; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+// Helper: Generate random alphanumeric code (length 10)
+function generateAccountCode() {
+  return Math.random().toString(36).substr(2, 10).toUpperCase();
 }
 
-// Show toast notification
-function showToast(message, duration = 3000) {
-  const toast = document.getElementById("toastNotification");
-  toast.textContent = message;
-  toast.classList.add("show");
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, duration);
-}
-
-// Simple password hashing (basic, not secure, placeholder)
+// Simple hash function (not cryptographically secure)
 function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
+  let hash = 0, i, chr;
+  if (str.length === 0) return hash;
+  for (i = 0; i < str.length; i++) {
+    chr = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
   }
   return hash.toString();
 }
 
-// =========== Account System ===========
-
-// Sign Up User
+// Sign up user with username + password
 async function signUp(username, password) {
-  // Check username exists
-  const usersRef = db.collection("users");
-  const snapshot = await usersRef.where("username", "==", username).get();
-  if (!snapshot.empty) {
-    throw new Error("Username already exists.");
-  }
+  username = username.trim();
+  if (!username || !password) throw "Username and password required";
 
-  const code = generateCode(10);
-  const hashedPassword = simpleHash(password);
-  const userData = {
+  // Check duplicate username
+  const snapshot = await db.ref("users").orderByChild("username").equalTo(username).once("value");
+  if (snapshot.exists()) throw "Username already taken";
+
+  const accountCode = generateAccountCode();
+  const passwordHash = simpleHash(password);
+
+  const newUserRef = db.ref("users").push();
+  await newUserRef.set({
     username,
-    password: hashedPassword,
-    code,
-    createdAt: Date.now(),
-    scores: {
-      asteroidDefense: [],
-      earthMoon: [],
-      pong: []
-    },
-    friends: [],
-    friendRequests: [],
-    friendStatus: "public",  // or private
-    chatHistory: [],
-    groupChats: []
+    passwordHash,
+    accountCode,
+    topScores: [],
+    lowScore: null,
+    last20Messages: [],
+    friends: {},
+    friendRequests: {},
+    friendStatus: "public"
+  });
+
+  currentUser = {
+    uid: newUserRef.key,
+    username,
+    accountCode,
+    passwordHash
   };
 
-  await usersRef.doc(code).set(userData);
-  currentUser = {...userData};
-  return code;
-}
-
-// Sign In User
-async function signIn(code, password) {
-  const usersRef = db.collection("users");
-  const doc = await usersRef.doc(code).get();
-  if (!doc.exists) throw new Error("Account not found.");
-
-  const userData = doc.data();
-  if (userData.password !== simpleHash(password)) {
-    throw new Error("Invalid password.");
-  }
-  currentUser = {...userData};
+  // Auto sign in
   return currentUser;
 }
 
-// Update User Data in DB
-async function updateUserData() {
-  if (!currentUser || !currentUser.code) return;
-  await db.collection("users").doc(currentUser.code).set(currentUser);
+// Sign in user by account code + password
+async function signIn(accountCode, password) {
+  accountCode = accountCode.trim();
+  if (!accountCode || !password) throw "Account code and password required";
+
+  const passwordHash = simpleHash(password);
+
+  const snapshot = await db.ref("users").orderByChild("accountCode").equalTo(accountCode).once("value");
+  if (!snapshot.exists()) throw "Account not found";
+
+  let user = null;
+  snapshot.forEach(child => {
+    const data = child.val();
+    if (data.passwordHash === passwordHash) {
+      user = {
+        uid: child.key,
+        username: data.username,
+        accountCode: data.accountCode,
+        passwordHash: data.passwordHash
+      };
+    }
+  });
+  if (!user) throw "Incorrect password";
+
+  currentUser = user;
+  return user;
 }
 
-// Reset Password
-async function resetPassword(code, newPassword) {
-  const usersRef = db.collection("users");
-  const doc = await usersRef.doc(code).get();
-  if (!doc.exists) throw new Error("Account not found.");
-  currentUser = doc.data();
-  currentUser.password = simpleHash(newPassword);
-  await updateUserData();
-  showToast("Password reset successful.");
-}
-
-// Delete Account
-async function deleteAccount(code, password, confirmationCode) {
-  if (!confirmationCode.startsWith("delete100%")) throw new Error("Invalid confirmation code.");
-  if (!currentUser || currentUser.code !== code) throw new Error("Not signed in or code mismatch.");
-  if (currentUser.password !== simpleHash(password)) throw new Error("Invalid password.");
-
-  // Delete user data
-  await db.collection("users").doc(code).delete();
+// Sign out user
+function signOut() {
   currentUser = null;
-  showToast("Account deleted successfully.");
+  currentRoomCode = "";
 }
 
-// =========== Chat System ===========
+// Download account data txt
+async function downloadAccountData() {
+  if (!currentUser) return alert("Not signed in");
+  const userRef = db.ref("users/" + currentUser.uid);
+  const snapshot = await userRef.once("value");
+  const data = snapshot.val();
+  if (!data) return alert("User data not found");
 
-async function sendMessage(text) {
-  if (!currentUser) {
-    showToast("Please sign in to chat.");
-    return;
+  let content = `Username: ${data.username}\nAccount Code: ${data.accountCode}\nPassword Hash: ${data.passwordHash}\n\nTop 5 Earth/Moon Scores: ${data.topScores ? data.topScores.slice(0,5).join(", ") : "None"}\nLowest Score: ${data.lowScore || "None"}\n\nLast 20 Messages:\n`;
+
+  if(data.last20Messages){
+    data.last20Messages.forEach(m => {
+      content += `- ${m}\n`;
+    });
+  } else content += "None";
+
+  const blob = new Blob([content], {type: "text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ChemChat_Account_${data.username}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Reset password process
+async function resetPassword(accountCode, newPassword, confirmPassword) {
+  if (!accountCode || !newPassword || !confirmPassword) throw "All fields required";
+  if (newPassword !== confirmPassword) throw "Passwords do not match";
+
+  const snapshot = await db.ref("users").orderByChild("accountCode").equalTo(accountCode).once("value");
+  if (!snapshot.exists()) throw "Account not found";
+
+  let userKey = null;
+  snapshot.forEach(child => {
+    userKey = child.key;
+  });
+  if (!userKey) throw "User not found";
+
+  const newHash = simpleHash(newPassword);
+  await db.ref("users/" + userKey).update({ passwordHash: newHash });
+
+  // If current user is resetting own password, update currentUser hash
+  if(currentUser && currentUser.uid === userKey){
+    currentUser.passwordHash = newHash;
   }
-  const timestamp = Date.now();
-  const msgObj = {
-    sender: currentUser.username,
-    text,
-    timestamp,
-  };
-  // Add to chatHistory
-  chatHistory.push(msgObj);
-  if (chatHistory.length > 100) chatHistory.shift(); // keep last 100 messages
-  // Save last 20 messages in account for backup
-  currentUser.chatHistory = chatHistory.slice(-20);
-  await updateUserData();
-
-  // Display message
-  displayChatMessage(msgObj);
-
-  // Handle Easter Eggs
-  handleSpecialMessages(text);
 }
 
-function displayChatMessage(msgObj) {
-  const chatMessages = document.getElementById("chatMessages");
-  const msgDiv = document.createElement("div");
-  msgDiv.textContent = `[${new Date(msgObj.timestamp).toLocaleTimeString()}] ${msgObj.sender}: ${msgObj.text}`;
+// Delete account process
+async function deleteAccount(accountCode, password) {
+  if (!accountCode || !password) throw "All fields required";
 
-  // Rainbow Easter egg
-  if (rainbowMode) {
-    msgDiv.classList.add("rainbow");
-  }
+  const passwordHash = simpleHash(password);
+  const snapshot = await db.ref("users").orderByChild("accountCode").equalTo(accountCode).once("value");
+  if (!snapshot.exists()) throw "Account not found";
 
-  chatMessages.appendChild(msgDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+  let userKey = null;
+  let correctPassword = false;
+  snapshot.forEach(child => {
+    if(child.val().passwordHash === passwordHash){
+      userKey = child.key;
+      correctPassword = true;
+    }
+  });
 
-// Handle special Easter egg commands
-function handleSpecialMessages(text) {
-  if (text.toLowerCase().includes("brodychem442/haha")) {
-    rainbowMode = true;
-    showToast("Rainbow mode activated!");
-  } else if (text.toLowerCase().startsWith("rickroll(")) {
-    activateRickRoll();
+  if (!userKey) throw "Account not found or incorrect password";
+  if(!correctPassword) throw "Incorrect password";
+
+  await db.ref("users/" + userKey).remove();
+  if(currentUser && currentUser.uid === userKey){
+    currentUser = null;
+    currentRoomCode = "";
   }
 }
 
-function activateRickRoll() {
-  rickrollMode = true;
-  showToast("Rick Roll mode activated!");
-  // TODO: Play video and music snippet, animate video flying across screen
-}
+// === FRIEND SYSTEM ===
 
-// =========== Friend System ===========
-
+// Send friend request by friendId (user id)
 async function sendFriendRequest(friendId) {
-  if (!currentUser) throw new Error("Not signed in.");
-  if (currentUser.code === friendId) throw new Error("Cannot friend yourself.");
+  if (!currentUser) throw "Not signed in";
+  if (friendId === currentUser.uid) throw "Cannot friend yourself";
 
-  // Check friendId exists
-  const friendDoc = await db.collection("users").doc(friendId).get();
-  if (!friendDoc.exists) throw new Error("Friend ID does not exist.");
+  // Check if friend exists
+  const friendSnap = await db.ref("users/" + friendId).once("value");
+  if (!friendSnap.exists()) throw "Friend user not found";
 
-  // Check duplicate requests
-  if (friendList.includes(friendId)) throw new Error("Already friends.");
-  if (currentUser.friendRequests.includes(friendId)) throw new Error("Friend request already sent.");
+  // Check if already friends or requested
+  const myFriendsSnap = await db.ref(`users/${currentUser.uid}/friends/${friendId}`).once("value");
+  if (myFriendsSnap.exists()) throw "Already friends";
 
-  // Add request to friend's pending list
-  let friendData = friendDoc.data();
-  friendData.friendRequests.push(currentUser.code);
-  await db.collection("users").doc(friendId).set(friendData);
+  const friendReqSnap = await db.ref(`users/${friendId}/friendRequests/${currentUser.uid}`).once("value");
+  if (friendReqSnap.exists()) throw "Friend request already sent";
 
-  showToast(`Friend request sent to ${friendData.username}`);
-}
-
-async function acceptFriendRequest(friendId) {
-  // Add each other to friends list and remove request
-  if (!currentUser) return;
-
-  const friendDoc = await db.collection("users").doc(friendId).get();
-  if (!friendDoc.exists) throw new Error("Friend ID not found.");
-
-  let friendData = friendDoc.data();
-  // Add to friends if not already
-  if (!currentUser.friends.includes(friendId)) currentUser.friends.push(friendId);
-  if (!friendData.friends.includes(currentUser.code)) friendData.friends.push(currentUser.code);
-
-  // Remove from friendRequests
-  currentUser.friendRequests = currentUser.friendRequests.filter(id => id !== friendId);
-  friendData.friendRequests = friendData.friendRequests.filter(id => id !== currentUser.code);
-
-  // Update both users
-  await db.collection("users").doc(currentUser.code).set(currentUser);
-  await db.collection("users").doc(friendId).set(friendData);
-
-  showToast(`You are now friends with ${friendData.username}`);
-}
-
-// Toggle friend status public/private
-async function setFriendStatus(status) {
-  if (!currentUser) return;
-  currentUser.friendStatus = status === "public" ? "public" : "private";
-  await updateUserData();
-  showToast(`Friend status set to ${currentUser.friendStatus}`);
-}
-
-// =========== Group Chat System ===========
-// Implementation of group chat invites, renaming, deleting, syncing
-// ... (omitted for brevity, can expand as needed)
-
-// =========== Earth/Moon Minigame ===========
-
-let earthClickCount = 0;
-let moonClickCount = 0;
-
-function earthClick() {
-  earthClickCount++;
-  if (earthClickCount === 2 && moonClickCount === 1) {
-    startEarthMoonGame();
-  }
-}
-
-function moonClick() {
-  moonClickCount++;
-  if (earthClickCount === 2 && moonClickCount === 1) {
-    startEarthMoonGame();
-  }
-}
-
-function startEarthMoonGame() {
-  showToast("Starting Earth/Moon game!");
-  // Launch minigame logic here
-}
-
-// =========== Pong Game ===========
-
-let pongGame = null;
-
-function startPongGame(roomId) {
-  pongRoom = roomId;
-  pongGame = new PongGame(roomId);
-  pongGame.init();
-}
-
-class PongGame {
-  constructor(roomId) {
-    this.roomId = roomId;
-    this.ball = { x: 150, y: 75, vx: 2, vy: 2, radius: 8 };
-    this.paddles = { left: 75, right: 75 };
-    this.scores = { left: 0, right: 0 };
-    this.isRunning = false;
-    this.firebaseUnsub = null;
-  }
-  init() {
-    this.isRunning = true;
-    this.setupFirebaseSync();
-    this.gameLoop();
-  }
-  setupFirebaseSync() {
-    // Listen for pong room data changes
-    this.firebaseUnsub = db.collection("pongRooms").doc(this.roomId).onSnapshot(doc => {
-      if (!doc.exists) return;
-      const data = doc.data();
-      this.ball = data.ball;
-      this.paddles = data.paddles;
-      this.scores = data.scores;
-      this.render();
-    });
-  }
-  gameLoop() {
-    if (!this.isRunning) return;
-    this.updateBall();
-    this.syncState();
-    this.render();
-    requestAnimationFrame(() => this.gameLoop());
-  }
-  updateBall() {
-    this.ball.x += this.ball.vx;
-    this.ball.y += this.ball.vy;
-
-    // Collision with top/bottom
-    if (this.ball.y < this.ball.radius || this.ball.y > 150 - this.ball.radius) {
-      this.ball.vy *= -1;
-    }
-    // Collision with paddles (simple)
-    if (this.ball.x < 10 && Math.abs(this.ball.y - this.paddles.left) < 30) {
-      this.ball.vx *= -1;
-    } else if (this.ball.x > 290 && Math.abs(this.ball.y - this.paddles.right) < 30) {
-      this.ball.vx *= -1;
-    }
-
-    // Score update (simplified)
-    if (this.ball.x < 0) {
-      this.scores.right++;
-      this.resetBall();
-    } else if (this.ball.x > 300) {
-      this.scores.left++;
-      this.resetBall();
-    }
-  }
-  resetBall() {
-    this.ball.x = 150;
-    this.ball.y = 75;
-    this.ball.vx = Math.random() > 0.5 ? 2 : -2;
-    this.ball.vy = Math.random() > 0.5 ? 2 : -2;
-  }
-  syncState() {
-    // Sync state to Firebase
-    db.collection("pongRooms").doc(this.roomId).set({
-      ball: this.ball,
-      paddles: this.paddles,
-      scores: this.scores
-    });
-  }
-  render() {
-    // Draw on canvas, omitted for brevity
-  }
-  stop() {
-    this.isRunning = false;
-    if (this.firebaseUnsub) this.firebaseUnsub();
-  }
-}
-
-// =========== Asteroid Defense Game ===========
-// Full game state, powerups, meteors, boss, missiles etc.
-// Complex, implemented fully but omitted here due to length
-// Calls to draw/update states are connected with UI and Firebase for syncing
-
-// =========== Background Music System ===========
-
-const bgMusic = new Audio('background_music.mp3');
-bgMusic.loop = true;
-function toggleBackgroundMusic() {
-  if (backgroundMusicPlaying) {
-    bgMusic.pause();
-    backgroundMusicPlaying = false;
-  } else {
-    bgMusic.play();
-    backgroundMusicPlaying = true;
-  }
-}
-
-// =========== UI Handlers & Event Listeners ===========
-
-// Example: handle sign-up form submission
-document.getElementById("signUpForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const username = e.target.elements["username"].value;
-  const password = e.target.elements["password"].value;
-  try {
-    const code = await signUp(username, password);
-    showToast(`Sign up successful! Your code: ${code}`);
-    // Update UI accordingly
-  } catch (err) {
-    showToast(err.message);
-  }
-});
-
-// Add other event listeners similarly for sign-in, password reset, friend requests, pong game controls, etc.
-
-// =========== Rocket Animation ===========
-
-function startRocketAnimation() {
-  const rocket = document.createElement("div");
-  rocket.classList.add("rocket");
-  document.body.appendChild(rocket);
-  rocket.addEventListener("animationend", () => {
-    rocket.remove();
-    // Show main UI or website here
-    document.getElementById("mainUI").style.display = "block";
+  // Send friend request
+  await db.ref(`users/${friendId}/friendRequests/${currentUser.uid}`).set({
+    username: currentUser.username,
+    timestamp: Date.now()
   });
 }
 
-// On page load
-window.onload = () => {
-  document.getElementById("mainUI").style.display = "none";
-  startRocketAnimation();
+// Accept friend request
+async function acceptFriendRequest(requesterId) {
+  if (!currentUser) throw "Not signed in";
+
+  // Add each other as friends
+  const updates = {};
+  updates[`users/${currentUser.uid}/friends/${requesterId}`] = true;
+  updates[`users/${requesterId}/friends/${currentUser.uid}`] = true;
+
+  // Remove friend request
+  updates[`users/${currentUser.uid}/friendRequests/${requesterId}`] = null;
+
+  await db.ref().update(updates);
+}
+
+// Deny friend request
+async function denyFriendRequest(requesterId) {
+  if (!currentUser) throw "Not signed in";
+  await db.ref(`users/${currentUser.uid}/friendRequests/${requesterId}`).remove();
+}
+
+// Remove friend
+async function removeFriend(friendId) {
+  if (!currentUser) throw "Not signed in";
+
+  const updates = {};
+  updates[`users/${currentUser.uid}/friends/${friendId}`] = null;
+  updates[`users/${friendId}/friends/${currentUser.uid}`] = null;
+
+  await db.ref().update(updates);
+}
+
+// Set friend status (public/private)
+async function setFriendStatus(status) {
+  if (!currentUser) throw "Not signed in";
+  if (status !== "public" && status !== "private") throw "Invalid status";
+  await db.ref(`users/${currentUser.uid}`).update({ friendStatus: status });
+}
+
+// Get friend requests realtime
+function onFriendRequestsUpdate(callback) {
+  if (!currentUser) return;
+  const ref = db.ref(`users/${currentUser.uid}/friendRequests`);
+  ref.on("value", snapshot => {
+    const requests = snapshot.val() || {};
+    callback(requests);
+  });
+}
+
+// Get friend list realtime
+function onFriendsUpdate(callback) {
+  if (!currentUser) return;
+  const ref = db.ref(`users/${currentUser.uid}/friends`);
+  ref.on("value", async snapshot => {
+    const friendsObj = snapshot.val() || {};
+    const friends = [];
+
+    // Fetch friend usernames and status
+    for(const friendId of Object.keys(friendsObj)){
+      const snap = await db.ref(`users/${friendId}`).once("value");
+      if(snap.exists()){
+        const f = snap.val();
+        friends.push({
+          uid: friendId,
+          username: f.username,
+          status: f.friendStatus || "public"
+        });
+      }
+    }
+    callback(friends);
+  });
+}
+
+// === GROUP CHAT SYSTEM ===
+
+// Create group chat with name + members (uids array)
+async function createGroupChat(name, memberIds) {
+  if (!currentUser) throw "Not signed in";
+  const groupRef = db.ref("groupChats").push();
+  await groupRef.set({
+    name,
+    members: memberIds.reduce((acc, id) => {
+      acc[id] = true;
+      return acc;
+    }, {}),
+    createdBy: currentUser.uid,
+    createdAt: Date.now()
+  });
+  return groupRef.key;
+}
+
+// Rename group chat
+async function renameGroupChat(groupId, newName) {
+  if (!currentUser) throw "Not signed in";
+  await db.ref(`groupChats/${groupId}`).update({ name: newName });
+}
+
+// Add members to group chat
+async function addMembersToGroupChat(groupId, memberIds) {
+  if (!currentUser) throw "Not signed in";
+  const updates = {};
+  memberIds.forEach(id => {
+    updates[`groupChats/${groupId}/members/${id}`] = true;
+  });
+  await db.ref().update(updates);
+}
+
+// Remove group chat (only creator)
+async function deleteGroupChat(groupId) {
+  if (!currentUser) throw "Not signed in";
+  const snap = await db.ref(`groupChats/${groupId}`).once("value");
+  if (!snap.exists()) throw "Group chat not found";
+  if (snap.val().createdBy !== currentUser.uid) throw "Only creator can delete group chat";
+  await db.ref(`groupChats/${groupId}`).remove();
+}
+
+// === CHAT ROOMS (normal chat rooms) ===
+
+// Create chat room (room code)
+async function createChatRoom(code) {
+  await db.ref(`chatRooms/${code}`).set({
+    members: { [currentUser.uid]: true },
+    createdAt: Date.now()
+  });
+  currentRoomCode = code;
+}
+
+// Join chat room
+async function joinChatRoom(code) {
+  const roomRef = db.ref(`chatRooms/${code}`);
+  const snap = await roomRef.once("value");
+  if (!snap.exists()) throw "Room not found";
+  await roomRef.child("members").child(currentUser.uid).set(true);
+  currentRoomCode = code;
+}
+
+// Leave chat room & delete if empty
+async function leaveChatRoom(code) {
+  const roomRef = db.ref(`chatRooms/${code}/members`);
+  await roomRef.child(currentUser.uid).remove();
+  const snap = await roomRef.once("value");
+  if (!snap.exists() || Object.keys(snap.val()).length === 0) {
+    await db.ref(`chatRooms/${code}`).remove();
+  }
+  currentRoomCode = "";
+}
+
+// Send chat message to room or group
+async function sendMessage(text, isGroup = false, groupId = "") {
+  if (!currentUser) throw "Not signed in";
+  const message = {
+    from: currentUser.username,
+    uid: currentUser.uid,
+    text,
+    timestamp: Date.now()
+  };
+  if (isGroup && groupId) {
+    await db.ref(`groupChats/${groupId}/messages`).push(message);
+  } else if (currentRoomCode) {
+    await db.ref(`chatRooms/${currentRoomCode}/messages`).push(message);
+  }
+}
+
+// Listen to chat messages
+function onChatMessages(callback, isGroup = false, groupId = "") {
+  if (isGroup && groupId) {
+    db.ref(`groupChats/${groupId}/messages`).on("child_added", snapshot => {
+      callback(snapshot.val());
+    });
+  } else if (currentRoomCode) {
+    db.ref(`chatRooms/${currentRoomCode}/messages`).on("child_added", snapshot => {
+      callback(snapshot.val());
+    });
+  }
+}
+
+// === PONG GAME ===
+
+const pongGame = {
+  roomId: null,
+  playerId: null,
+  paddlePos: 0,
+  opponentPaddlePos: 0,
+  ballX: 250,
+  ballY: 125,
+  ballSpeedX: 4,
+  ballSpeedY: 4,
+  score1: 0,
+  score2: 0,
+  isGameRunning: false,
+  init(roomId) {
+    this.roomId = roomId;
+    this.playerId = currentUser.uid;
+    this.paddlePos = 125;  // center paddle
+    this.score1 = 0;
+    this.score2 = 0;
+    this.ballX = 250;
+    this.ballY = 125;
+    this.ballSpeedX = 4;
+    this.ballSpeedY = 4;
+    this.isGameRunning = true;
+
+    // Sync paddle and score to Firebase
+    this.syncGameData();
+    this.listenGameData();
+  },
+  async syncGameData() {
+    if (!this.isGameRunning) return;
+
+    await db.ref(`pongRooms/${this.roomId}/players/${this.playerId}`).set({
+      paddlePos: this.paddlePos
+    });
+    await db.ref(`pongRooms/${this.roomId}/ball`).set({
+      x: this.ballX,
+      y: this.ballY,
+      speedX: this.ballSpeedX,
+      speedY: this.ballSpeedY
+    });
+    await db.ref(`pongRooms/${this.roomId}/scores`).set({
+      p1: this.score1,
+      p2: this.score2
+    });
+  },
+  listenGameData() {
+    db.ref(`pongRooms/${this.roomId}/players`).on("value", snapshot => {
+      const players = snapshot.val() || {};
+      for (const id in players) {
+        if (id !== this.playerId) {
+          this.opponentPaddlePos = players[id].paddlePos || 125;
+        } else {
+          this.paddlePos = players[id].paddlePos || 125;
+        }
+      }
+      this.render();
+    });
+    db.ref(`pongRooms/${this.roomId}/ball`).on("value", snapshot => {
+      const ball = snapshot.val();
+      if(ball) {
+        this.ballX = ball.x;
+        this.ballY = ball.y;
+        this.ballSpeedX = ball.speedX;
+        this.ballSpeedY = ball.speedY;
+      }
+      this.render();
+    });
+    db.ref(`pongRooms/${this.roomId}/scores`).on("value", snapshot => {
+      const scores = snapshot.val();
+      if(scores){
+        this.score1 = scores.p1 || 0;
+        this.score2 = scores.p2 || 0;
+      }
+      this.render();
+    });
+  },
+  updateBall() {
+    this.ballX += this.ballSpeedX;
+    this.ballY += this.ballSpeedY;
+
+    // Ball collision top/bottom
+    if(this.ballY < 0 || this.ballY > 250){
+      this.ballSpeedY = -this.ballSpeedY;
+      playPongSound();
+    }
+    // Ball collision paddle
+    if((this.ballX < 30 && this.ballY > this.paddlePos && this.ballY < this.paddlePos + 50) ||
+      (this.ballX > 470 && this.ballY > this.opponentPaddlePos && this.ballY < this.opponentPaddlePos + 50)) {
+      this.ballSpeedX = -this.ballSpeedX;
+      playPongSound();
+    }
+
+    // Score
+    if(this.ballX < 0){
+      this.score2++;
+      this.resetBall();
+    } else if(this.ballX > 500){
+      this.score1++;
+      this.resetBall();
+    }
+  },
+  resetBall() {
+    this.ballX = 250;
+    this.ballY = 125;
+    this.ballSpeedX = 4 * (Math.random() > 0.5 ? 1 : -1);
+    this.ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1);
+  },
+  render() {
+    // Render pong game UI on your canvas or elements
+    // Example: update paddle positions, ball position, scores, etc.
+  },
+  start() {
+    if(this.isGameRunning) return;
+    this.isGameRunning = true;
+    this.paddlePos = 125;
+    this.opponentPaddlePos = 125;
+    this.score1 = 0;
+    this.score2 = 0;
+    this.ballX = 250;
+    this.ballY = 125;
+    this.ballSpeedX = 4;
+    this.ballSpeedY = 4;
+
+    pongInterval = setInterval(() => {
+      this.updateBall();
+      this.syncGameData();
+    }, 20);
+  },
+  stop() {
+    this.isGameRunning = false;
+    clearInterval(pongInterval);
+  }
 };
+
+function playPongSound(){
+  if(notificationSoundEnabled){
+    notificationAudio.currentTime = 0;
+    notificationAudio.play();
+  }
+}
+
+// === ASTEROID DEFENSE GAME ===
+
+const asteroidGame = {
+  health: 3,
+  maxHealth: 3,
+  score: 0,
+  powerUps: [],
+  activePowerUps: [],
+  asteroids: [],
+  boss: null,
+  powerUpTimers: {},
+  tankMissiles: 0,
+  tankCooldown: 0,
+  cloverActive: false,
+  hourglassActive: false,
+  init() {
+    this.health = 3;
+    this.maxHealth = 3;
+    this.score = 0;
+    this.powerUps = [];
+    this.activePowerUps = [];
+    this.asteroids = [];
+    this.boss = null;
+    this.powerUpTimers = {};
+    this.tankMissiles = 0;
+    this.tankCooldown = 0;
+    this.cloverActive = false;
+    this.hourglassActive = false;
+    this.spawnLoop();
+  },
+  spawnLoop() {
+    asteroidInterval = setInterval(() => {
+      // Spawn asteroids based on timing, increase difficulty with score
+      this.spawnAsteroid();
+      this.updateGame();
+    }, this.hourglassActive ? 1500 : 1000);
+  },
+  spawnAsteroid() {
+    // Logic to spawn asteroids of different types and colors with different health and score values
+    // Random spawn position top of screen
+    // Add to this.asteroids array
+  },
+  updateGame() {
+    // Move asteroids down, check collisions with Earth
+    // Handle power-up drops
+    // Update UI, health, score, boss status
+  },
+  activatePowerUp(type) {
+    // Add power-up effect (heart, clover, hourglass, hammer, bomb, tank, lightning, mystery)
+    // Manage timers for power-ups
+  },
+  fireTankMissile() {
+    if(this.tankMissiles > 0 && this.tankCooldown <= 0){
+      this.tankMissiles--;
+      this.tankCooldown = 10; // cooldown seconds
+      // Damage asteroids or boss
+    }
+  },
+  takeDamage(amount) {
+    this.health -= amount;
+    if(this.health <= 0){
+      this.gameOver();
+    }
+  },
+  gameOver() {
+    clearInterval(asteroidInterval);
+    alert("Game Over! Your score: " + this.score);
+  }
+};
+
+// === UI AND NOTIFICATIONS ===
+
+function showToast(message) {
+  // Implement toast notification with fade in/out
+  console.log("Toast:", message);
+}
+
+function playNotificationSound() {
+  if(notificationSoundEnabled){
+    notificationAudio.currentTime = 0;
+    notificationAudio.play();
+  }
+}
+
+// === RICKROLL EASTER EGG ===
+
+function startRickRoll() {
+  isRickRollMode = true;
+  rickrollAudio.play();
+  // Display video flying across screen and snippets playing on chat messages
+}
+
+function stopRickRoll() {
+  isRickRollMode = false;
+  rickrollAudio.pause();
+  rickrollAudio.currentTime = 0;
+  // Remove flying video if any
+}
+
+// === MISC FUNCTIONS ===
+
+// Save last 20 chat messages to user account (for chat history download)
+async function saveLastMessages(messages) {
+  if (!currentUser) return;
+  const last20 = messages.slice(-20);
+  await db.ref(`users/${currentUser.uid}/last20Messages`).set(last20);
+}
+
+// Other helper functions and UI event listeners below...
+
+// === Event Listeners and UI Interaction Logic ===
+
+// Example: Hook sign-up form submit
+document.getElementById("signupForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  try {
+    const username = e.target.username.value;
+    const password = e.target.password.value;
+    await signUp(username, password);
+    showToast("Signed up successfully!");
+  } catch (err) {
+    showToast(err);
+  }
+});
+
+// ... Similar hooks for sign-in, password reset, friend requests, chat sending, pong controls ...
 
