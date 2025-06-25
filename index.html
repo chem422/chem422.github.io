@@ -26,7 +26,8 @@
       <button id="settings">Settings</button>
       <button id="tutorial">Tutorial</button>
     </div>
-    <div id="account-dropdown" class="dropdown">
+    <!-- Temporarily hide other menus -->
+    <div id="account-dropdown" class="dropdown hidden">
       <button>Account</button>
       <div id="account-content" class="dropdown-content hidden">
         <p id="account-status-text">You are not signed in.</p>
@@ -34,7 +35,7 @@
         <button id="sign-up">Sign Up</button>
       </div>
     </div>
-    <div id="friends-dropdown" class="dropdown">
+    <div id="friends-dropdown" class="dropdown hidden">
       <button>Friends</button>
       <div id="friends-content" class="dropdown-content hidden">
         <button id="friends-list">Friends List</button>
@@ -101,9 +102,6 @@
   <audio id="bg-music" src="lo-fi-alarm-clock-243766 (1).mp3" loop></audio>
   <audio id="notification-sound" src="notification-alert-269289.mp3"></audio>
   <audio id="rickroll-sound" src="trimmed_audio_5s.mp3"></audio>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="app.js"></script> <!-- Removed type="module" to avoid import issues -->
+  <script src="app.js"></script>
 </body>
 </html>
