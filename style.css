@@ -81,9 +81,17 @@ input, select {
 
 .dropdown {
   position: fixed;
+  z-index: 20;
+}
+
+#account-dropdown {
   top: 10px;
   right: 10px;
-  z-index: 20;
+}
+
+#friends-dropdown {
+  top: 10px;
+  right: 70px; /* Offset to space apart */
 }
 
 .dropdown-content {
@@ -105,8 +113,47 @@ input, select {
   opacity: 1;
 }
 
-.modal, #notification-popup, #phone-controls, #pong-cancel, #not-rickroll {
-  display: none !important; /* Forcefully hide all non-main-menu elements */
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  border: 2px solid #0ff;
+  border-radius: 10px;
+  z-index: 100;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translate(-50%, -60%); }
+  100% { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.back {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 101;
+}
+
+#pong-canvas {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #0ff;
+}
+
+.difficulty-btn, .control-btn {
+  margin: 5px;
+}
+
+.difficulty-btn.selected, .control-btn.selected {
+  background: #0ff;
+  color: #000;
+}
+
+#notification-popup, #phone-controls, #pong-cancel, #not-rickroll {
+  display: none !important; /* Forcefully hide non-essential elements */
 }
 
 .hidden {
@@ -118,4 +165,6 @@ input, select {
   #moon { width: 15px; bottom: 50px; left: 50px; }
   #main-menu { width: 90%; }
   button, input { font-size: 14px; }
+  #account-dropdown { right: 5px; }
+  #friends-dropdown { right: 60px; }
 }
