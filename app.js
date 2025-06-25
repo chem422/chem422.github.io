@@ -12,11 +12,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Main menu button functionality
   document.getElementById("start-chat").addEventListener("click", () => {
-    alert("Start Chat clicked! (Placeholder)");
+    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    document.getElementById("room-code-display").textContent = roomCode;
+    document.getElementById("chat-room-modal").classList.remove("hidden");
+    document.getElementById("chat-messages").innerHTML = "";
   });
 
   document.getElementById("join-chat").addEventListener("click", () => {
-    alert("Join Chat clicked! (Placeholder)");
+    const roomCode = document.getElementById("room-code").value.trim();
+    if (roomCode) {
+      document.getElementById("room-code-display").textContent = roomCode;
+      document.getElementById("chat-room-modal").classList.remove("hidden");
+      document.getElementById("chat-messages").innerHTML = "";
+    } else {
+      alert("Please enter a room code!");
+    }
   });
 
   document.getElementById("join-group-chat").addEventListener("click", () => {
@@ -73,6 +83,28 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Notifications clicked! (Placeholder)");
   });
 
+  // Chat room functionality
+  document.querySelector("#chat-room-modal .back").addEventListener("click", () => {
+    document.getElementById("chat-room-modal").classList.add("hidden");
+  });
+
+  document.getElementById("chat-send").addEventListener("click", () => {
+    const chatInput = document.getElementById("chat-input");
+    const message = chatInput.value.trim();
+    if (message) {
+      const chatMessages = document.getElementById("chat-messages");
+      const messageDiv = document.createElement("div");
+      messageDiv.textContent = message;
+      chatMessages.appendChild(messageDiv);
+      chatInput.value = "";
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  });
+
+  document.getElementById("chat-add").addEventListener("click", () => {
+    alert("Add user to chat! (Placeholder)");
+  });
+
   // Pong game functionality
   document.querySelector("#pong-modal .back").addEventListener("click", () => {
     document.getElementById("pong-modal").classList.add("hidden");
@@ -105,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isMobile) {
       phoneControls.classList.remove("hidden");
       phoneControls.classList.add("active");
-      document.getElementById("touch-control").classList.add("selected"); // Default to touch
+      document.getElementById("touch-control").classList.add("selected");
     } else {
       phoneControls.classList.add("hidden");
     }
@@ -121,7 +153,15 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
     ctx.fillStyle = "#0ff";
     ctx.fillRect(playerPaddle.x, playerPaddle.y, 10, 60);
-    opponentPaddle.y += (ball.y - (opponentPaddle.y + 30)) * 0.1;
+
+    // Improved AI: Predict ball's future position
+    const timeToReachPaddle = (pongCanvas.width - opponentPaddle.x - ball.x) / Math.abs(ball.dx);
+    const predictedY = ball.y + ball.dy * timeToReachPaddle;
+    opponentPaddle.y += (predictedY - (opponentPaddle.y + 30)) * 0.15; // Smarter adjustment
+
+    if (opponentPaddle.y < 0) opponentPaddle.y = 0;
+    if (opponentPaddle.y > pongCanvas.height - 60) opponentPaddle.y = pongCanvas.height - 60;
+
     ctx.fillRect(opponentPaddle.x, opponentPaddle.y, 10, 60);
     ctx.fillRect(ball.x, ball.y, 10, 10);
     ctx.fillText(playerPaddle.score, pongCanvas.width / 4, 30);
