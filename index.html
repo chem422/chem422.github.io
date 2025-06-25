@@ -2,80 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chem Chat 1.8</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chem Chat 1.9</title>
   <link rel="stylesheet" href="style.css" />
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
-
-<!-- 🌌 Background Planets -->
-<div class="background">
-  <div id="earth" class="planet"></div>
-  <div id="moon" class="planet"></div>
-</div>
-
-<!-- 🌟 Main Menu -->
-<div id="mainMenu" class="screen visible">
-  <div class="menu-box">
-    <h1>Chem Chat 1.8</h1>
-    <input id="usernameInput" placeholder="Enter your name..." />
-    <button onclick="startRoom()">Start New Room</button>
-    <input id="roomInput" placeholder="Enter Room Code..." />
-    <button onclick="joinRoom()">Join Room</button>
-    <button onclick="toggleSettingsMenu()">⚙️ Settings</button>
-  </div>
-</div>
-
-<!-- 🔧 Settings Menu (Main) -->
-<div id="settingsMenu" class="overlay hidden">
-  <h3>Settings</h3>
-  <label><input type="checkbox" id="notifSoundToggle" checked /> Notification Sound</label><br>
-  <button onclick="toggleSettingsMenu()">Close</button>
-</div>
-
-<!-- 💬 Chat Area -->
-<div id="chatArea" class="screen hidden">
-  <div class="chat-header">
-    <div>
-      <button onclick="leaveRoom()">← Back</button>
-      <button onclick="toggleChatSettingsMenu()">⚙️ Settings</button>
-    </div>
-    <div>Room: <span id="currentRoomCode"></span></div>
+  <div id="rocket-animation">
+    <canvas id="rocketCanvas"></canvas>
   </div>
 
-  <div id="messages" class="chat-messages"></div>
+  <div id="main-ui" class="hidden">
+    <header>
+      <h1>Chem Chat 1.9</h1>
+      <div class="dropdown">
+        <button class="dropbtn">Account</button>
+        <div class="dropdown-content" id="account-menu">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="dropbtn">Friends</button>
+        <div class="dropdown-content" id="friend-menu">
+          <button onclick="openFriendStatus()">Friend Status</button>
+          <button onclick="openAddFriend()">Add Friend</button>
+          <button onclick="openFriendList()">Friends</button>
+          <button onclick="openFriendNotifications()">Notifications</button>
+          <button onclick="openGroupInvite()">Add Friend to Group Chat</button>
+        </div>
+      </div>
+    </header>
 
-  <div class="chat-input">
-    <textarea id="messageInput" placeholder="Type your message..."></textarea>
-    <button onclick="openFileUpload()">+ Add</button>
+    <main>
+      <div class="menu-buttons">
+        <button onclick="startChatRoom()">Start Chat</button>
+        <button onclick="joinChatRoom()">Join Chat</button>
+        <button onclick="openGroupChatList()">Join Group Chat</button>
+        <button onclick="startPongGame()">Play Pong</button>
+        <button onclick="startEarthGameSequence()">Launch Earth Game</button>
+        <button onclick="toggleMusic()">🎵 Toggle Music</button>
+        <button onclick="openTutorial()">📘 Tutorial</button>
+      </div>
+
+      <div id="chat-area" class="hidden">
+        <div id="chat-log"></div>
+        <input type="text" id="chat-input" placeholder="Type message..." />
+        <button onclick="sendMessage()">Send</button>
+        <input type="file" id="file-input" />
+        <button onclick="uploadFile()">+ Add</button>
+      </div>
+
+      <div id="pong-game" class="hidden"></div>
+      <div id="earth-game" class="hidden"></div>
+    </main>
   </div>
 
-  <!-- 🔧 Settings Menu (Chat) -->
-  <div id="chatSettingsMenu" class="overlay hidden">
-    <h3>Chat Settings</h3>
-    <label><input type="checkbox" id="chatNotifToggle" checked /> Notification Sound</label><br>
-    <button onclick="toggleChatSettingsMenu()">Close</button>
+  <!-- Modals -->
+  <div id="modal-container">
+    <!-- All dynamic modals for account, friend, chat, tutorial, etc. -->
   </div>
-</div>
 
-<!-- 🛸 Rickroll Fly -->
-<div id="rickrollFlyContainer"></div>
+  <!-- Notification Toast -->
+  <div id="toast-container"></div>
 
-<!-- 📂 File Upload GUI -->
-<div id="fileUploadOverlay" class="overlay hidden">
-  <h3>Upload a File</h3>
-  <p>Only .txt files allowed. Drag & drop or select manually.</p>
-  <input type="file" id="fileInput" accept=".txt" />
-  <button onclick="uploadSelectedFile()">Upload</button>
-  <button onclick="closeFileUpload()">Cancel</button>
-</div>
+  <!-- Background Music -->
+  <audio id="bg-music" loop preload="auto">
+    <source src="assets/music/lofi-relax.mp3" type="audio/mpeg" />
+  </audio>
 
-<!-- 🕹️ Pong Game Canvas -->
-<canvas id="pongCanvas" width="400" height="300" class="hidden"></canvas>
-
-<!-- 🚀 Scripts -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="app.js"></script>
+  <!-- Notification Sound -->
+  <audio id="notif-sound" preload="auto">
+    <source src="assets/sounds/soft-beep.mp3" type="audio/mpeg" />
+  </audio>
 </body>
 </html>
