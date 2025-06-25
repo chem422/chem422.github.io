@@ -22,6 +22,7 @@
       <input id="room-code" type="text" placeholder="Enter room code">
       <button id="join-group-chat">Join Group Chat</button>
       <input id="temp-username" type="text" placeholder="Enter username" class="hidden">
+      <button id="play-pong">Play Pong</button>
       <button id="settings">Settings</button>
       <button id="tutorial">Tutorial</button>
     </div>
@@ -42,15 +43,7 @@
         <button id="notifications">Notifications</button>
       </div>
     </div>
-    <!-- Explicitly hidden elements -->
-    <div id="settings-modal" class="modal" style="display: none;">
-      <button class="back">Back</button>
-      <h2>Settings</h2>
-      <label><input type="checkbox" id="bg-music-toggle" checked> Background Music</label>
-      <label><input type="checkbox" id="notif-sound-toggle" checked> Notification Sound</label>
-      <button id="save-settings">Save</button>
-    </div>
-    <div id="pong-modal" class="modal" style="display: none;">
+    <div id="pong-modal" class="modal hidden">
       <button class="back">Back</button>
       <h2>Pong</h2>
       <div id="difficulty-menu">
@@ -59,15 +52,22 @@
         <button id="hard" class="difficulty-btn">Hard</button>
         <button id="confirm-difficulty">Confirm</button>
       </div>
-      <div id="phone-controls" class="hidden" style="display: none;">
+      <div id="phone-controls" class="hidden">
         <button id="tilt-control" class="control-btn">Tilt</button>
         <button id="touch-control" class="control-btn">Touch/Drag</button>
         <button id="arrow-control" class="control-btn">Digital Arrows</button>
         <button id="confirm-control">Confirm</button>
       </div>
       <canvas id="pong-canvas" width="600" height="400"></canvas>
-      <button id="pong-cancel" class="hidden" style="display: none;">Cancel</button>
+      <button id="pong-cancel" class="hidden">Cancel</button>
       <p id="pong-opponent">Opponent: <span id="opponent-name"></span></p>
+    </div>
+    <div id="settings-modal" class="modal" style="display: none;">
+      <button class="back">Back</button>
+      <h2>Settings</h2>
+      <label><input type="checkbox" id="bg-music-toggle" checked> Background Music</label>
+      <label><input type="checkbox" id="notif-sound-toggle" checked> Notification Sound</label>
+      <button id="save-settings">Save</button>
     </div>
     <div id="chat-room-modal" class="modal" style="display: none;">
       <button class="back">Back</button>
