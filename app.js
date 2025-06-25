@@ -74,11 +74,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Pong game functionality
   document.querySelector("#pong-modal .back").addEventListener("click", () => {
     document.getElementById("pong-modal").classList.add("hidden");
+    gameActive = false; // Stop game when closing
   });
 
   const pongCanvas = document.getElementById("pong-canvas");
-  pongCanvas.width = 600;
-  pongCanvas.height = 400;
+  pongCanvas.width = window.innerWidth * 0.9; // Dynamic width
+  pongCanvas.height = window.innerHeight * 0.6; // Dynamic height
   const ctx = pongCanvas.getContext("2d");
   let playerPaddle = { x: 10, y: pongCanvas.height / 2 - 30, score: 0 };
   let opponentPaddle = { x: pongCanvas.width - 20, y: pongCanvas.height / 2 - 30, score: 0 };
@@ -114,10 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
       gameActive = false;
       return;
     }
-    document.addEventListener("keydown", e => {
-      if (e.key === "w" && playerPaddle.y > 0) playerPaddle.y -= 5;
-      if (e.key === "s" && playerPaddle.y < pongCanvas.height - 60) playerPaddle.y += 5;
-    }, { once: true });
     requestAnimationFrame(gameLoop);
   }
 
@@ -127,6 +124,14 @@ document.addEventListener("DOMContentLoaded", () => {
     ball.dx = 5 * (Math.random() > 0.5 ? 1 : -1);
     ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
   }
+
+  // Persistent keydown listener
+  document.addEventListener("keydown", (e) => {
+    if (gameActive) {
+      if (e.key === "w" && playerPaddle.y > 0) playerPaddle.y -= 5;
+      if (e.key === "s" && playerPaddle.y < pongCanvas.height - 60) playerPaddle.y += 5;
+    }
+  });
 
   document.getElementById("confirm-difficulty").addEventListener("click", startPongGame);
 });
