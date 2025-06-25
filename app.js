@@ -1,4 +1,4 @@
-// === FIREBASE CONFIGURATION & INIT ===
+.// ===== FIREBASE CONFIG =====
 const firebaseConfig = {
   apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
   authDomain: "chat-room-22335.firebaseapp.com",
@@ -8,48 +8,61 @@ const firebaseConfig = {
   appId: "1:20974926341:web:c413eb3122888d6803fa6c",
   measurementId: "G-WB5QY60EG6"
 };
-
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
 
-// === GLOBAL VARIABLES ===
-let currentUser = null;      // Current signed-in user info { username, uid, code }
-let currentRoomCode = "";    // Current chat room or group code
+const db = firebase.database();
+
+//////////////////////////////
+// GLOBALS
+let currentUser = null; // {uid, username, code, passwordHash}
+let currentRoomCode = "";
 let rainbowInterval = null;
 let isRickRollMode = false;
 let pongInterval = null;
 let asteroidInterval = null;
-let bgMusic = new Audio("https://cdn.pixabay.com/audio/2023/03/30/audio_0b9d97be10.mp3");
-let notificationAudio = new Audio("https://cdn.pixabay.com/download/audio/2022/02/23/audio_b38ec1d2d4.mp3");
-let rickrollAudio = new Audio("https://archive.org/download/NeverGonnaGiveYouUpHQ/Never%20Gonna%20Give%20You%20Up%20-%20HQ.mp3");
 let notificationSoundEnabled = true;
+let musicEnabled = true;
 
-// === ACCOUNT SYSTEM ===
+const notificationAudio = new Audio("notification-alert-269289.mp3");
+const backgroundMusic = new Audio("lo-fi-alarm-clock-243766.mp3");
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.15;
 
-// Helper: Generate random alphanumeric code (length 10)
+//////////////////////////////
+// UTILS
 function generateAccountCode() {
   return Math.random().toString(36).substr(2, 10).toUpperCase();
 }
 
-// Simple hash function (not cryptographically secure)
 function simpleHash(str) {
-  let hash = 0, i, chr;
+  let hash = 0;
   if (str.length === 0) return hash;
-  for (i = 0; i < str.length; i++) {
-    chr = str.charCodeAt(i);
+  for (let i = 0; i < str.length; i++) {
+    const chr = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + chr;
     hash |= 0;
   }
   return hash.toString();
 }
 
-// Sign up user with username + password
+function showToast(msg) {
+  // Simple alert or implement your toast UI here
+  alert(msg);
+}
+
+function playNotificationSound() {
+  if (notificationSoundEnabled) {
+    notificationAudio.currentTime = 0;
+    notificationAudio.play();
+  }
+}
+
+//////////////////////////////
+// ACCOUNT SYSTEM
 async function signUp(username, password) {
   username = username.trim();
   if (!username || !password) throw "Username and password required";
 
-  // Check duplicate username
   const snapshot = await db.ref("users").orderByChild("username").equalTo(username).once("value");
   if (snapshot.exists()) throw "Username already taken";
 
@@ -76,11 +89,13 @@ async function signUp(username, password) {
     passwordHash
   };
 
-  // Auto sign in
+  updateUserInfoUI();
+  loadFriendRequests();
+  loadFriendsList();
+
   return currentUser;
 }
 
-// Sign in user by account code + password
 async function signIn(accountCode, password) {
   accountCode = accountCode.trim();
   if (!accountCode || !password) throw "Account code and password required";
@@ -105,139 +120,63 @@ async function signIn(accountCode, password) {
   if (!user) throw "Incorrect password";
 
   currentUser = user;
+
+  updateUserInfoUI();
+  loadFriendRequests();
+  loadFriendsList();
+
   return user;
 }
 
-// Sign out user
 function signOut() {
   currentUser = null;
   currentRoomCode = "";
+  clearUIOnSignOut();
+  stopBackgroundMusic();
 }
 
-// Download account data txt
-async function downloadAccountData() {
-  if (!currentUser) return alert("Not signed in");
-  const userRef = db.ref("users/" + currentUser.uid);
-  const snapshot = await userRef.once("value");
-  const data = snapshot.val();
-  if (!data) return alert("User data not found");
-
-  let content = `Username: ${data.username}\nAccount Code: ${data.accountCode}\nPassword Hash: ${data.passwordHash}\n\nTop 5 Earth/Moon Scores: ${data.topScores ? data.topScores.slice(0,5).join(", ") : "None"}\nLowest Score: ${data.lowScore || "None"}\n\nLast 20 Messages:\n`;
-
-  if(data.last20Messages){
-    data.last20Messages.forEach(m => {
-      content += `- ${m}\n`;
-    });
-  } else content += "None";
-
-  const blob = new Blob([content], {type: "text/plain"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `ChemChat_Account_${data.username}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-// Reset password process
-async function resetPassword(accountCode, newPassword, confirmPassword) {
-  if (!accountCode || !newPassword || !confirmPassword) throw "All fields required";
-  if (newPassword !== confirmPassword) throw "Passwords do not match";
-
-  const snapshot = await db.ref("users").orderByChild("accountCode").equalTo(accountCode).once("value");
-  if (!snapshot.exists()) throw "Account not found";
-
-  let userKey = null;
-  snapshot.forEach(child => {
-    userKey = child.key;
-  });
-  if (!userKey) throw "User not found";
-
-  const newHash = simpleHash(newPassword);
-  await db.ref("users/" + userKey).update({ passwordHash: newHash });
-
-  // If current user is resetting own password, update currentUser hash
-  if(currentUser && currentUser.uid === userKey){
-    currentUser.passwordHash = newHash;
-  }
-}
-
-// Delete account process
-async function deleteAccount(accountCode, password) {
-  if (!accountCode || !password) throw "All fields required";
-
-  const passwordHash = simpleHash(password);
-  const snapshot = await db.ref("users").orderByChild("accountCode").equalTo(accountCode).once("value");
-  if (!snapshot.exists()) throw "Account not found";
-
-  let userKey = null;
-  let correctPassword = false;
-  snapshot.forEach(child => {
-    if(child.val().passwordHash === passwordHash){
-      userKey = child.key;
-      correctPassword = true;
-    }
-  });
-
-  if (!userKey) throw "Account not found or incorrect password";
-  if(!correctPassword) throw "Incorrect password";
-
-  await db.ref("users/" + userKey).remove();
-  if(currentUser && currentUser.uid === userKey){
-    currentUser = null;
-    currentRoomCode = "";
-  }
-}
-
-// === FRIEND SYSTEM ===
-
-// Send friend request by friendId (user id)
+//////////////////////////////
+// FRIEND SYSTEM
 async function sendFriendRequest(friendId) {
   if (!currentUser) throw "Not signed in";
   if (friendId === currentUser.uid) throw "Cannot friend yourself";
 
-  // Check if friend exists
   const friendSnap = await db.ref("users/" + friendId).once("value");
   if (!friendSnap.exists()) throw "Friend user not found";
 
-  // Check if already friends or requested
   const myFriendsSnap = await db.ref(`users/${currentUser.uid}/friends/${friendId}`).once("value");
   if (myFriendsSnap.exists()) throw "Already friends";
 
   const friendReqSnap = await db.ref(`users/${friendId}/friendRequests/${currentUser.uid}`).once("value");
   if (friendReqSnap.exists()) throw "Friend request already sent";
 
-  // Send friend request
   await db.ref(`users/${friendId}/friendRequests/${currentUser.uid}`).set({
     username: currentUser.username,
     timestamp: Date.now()
   });
 }
 
-// Accept friend request
 async function acceptFriendRequest(requesterId) {
   if (!currentUser) throw "Not signed in";
 
-  // Add each other as friends
   const updates = {};
   updates[`users/${currentUser.uid}/friends/${requesterId}`] = true;
   updates[`users/${requesterId}/friends/${currentUser.uid}`] = true;
-
-  // Remove friend request
   updates[`users/${currentUser.uid}/friendRequests/${requesterId}`] = null;
 
   await db.ref().update(updates);
+
+  loadFriendRequests();
+  loadFriendsList();
 }
 
-// Deny friend request
 async function denyFriendRequest(requesterId) {
   if (!currentUser) throw "Not signed in";
   await db.ref(`users/${currentUser.uid}/friendRequests/${requesterId}`).remove();
+
+  loadFriendRequests();
 }
 
-// Remove friend
 async function removeFriend(friendId) {
   if (!currentUser) throw "Not signed in";
 
@@ -246,52 +185,67 @@ async function removeFriend(friendId) {
   updates[`users/${friendId}/friends/${currentUser.uid}`] = null;
 
   await db.ref().update(updates);
+
+  loadFriendsList();
 }
 
-// Set friend status (public/private)
 async function setFriendStatus(status) {
   if (!currentUser) throw "Not signed in";
   if (status !== "public" && status !== "private") throw "Invalid status";
   await db.ref(`users/${currentUser.uid}`).update({ friendStatus: status });
 }
 
-// Get friend requests realtime
-function onFriendRequestsUpdate(callback) {
+// Load friend requests and update UI
+function loadFriendRequests() {
   if (!currentUser) return;
-  const ref = db.ref(`users/${currentUser.uid}/friendRequests`);
-  ref.on("value", snapshot => {
+  db.ref(`users/${currentUser.uid}/friendRequests`).on("value", snapshot => {
     const requests = snapshot.val() || {};
-    callback(requests);
+    const container = document.getElementById("friendRequestsList");
+    container.innerHTML = "";
+    for (const requesterId in requests) {
+      const req = requests[requesterId];
+      const div = document.createElement("div");
+      div.className = "friend-request";
+      div.textContent = `Request from: ${req.username}`;
+      const acceptBtn = document.createElement("button");
+      acceptBtn.textContent = "Accept";
+      acceptBtn.onclick = () => acceptFriendRequest(requesterId);
+      const denyBtn = document.createElement("button");
+      denyBtn.textContent = "Deny";
+      denyBtn.onclick = () => denyFriendRequest(requesterId);
+      div.appendChild(acceptBtn);
+      div.appendChild(denyBtn);
+      container.appendChild(div);
+    }
   });
 }
 
-// Get friend list realtime
-function onFriendsUpdate(callback) {
+// Load friends and update UI
+function loadFriendsList() {
   if (!currentUser) return;
-  const ref = db.ref(`users/${currentUser.uid}/friends`);
-  ref.on("value", async snapshot => {
+  db.ref(`users/${currentUser.uid}/friends`).on("value", async snapshot => {
     const friendsObj = snapshot.val() || {};
-    const friends = [];
-
-    // Fetch friend usernames and status
-    for(const friendId of Object.keys(friendsObj)){
+    const container = document.getElementById("friendsList");
+    container.innerHTML = "";
+    for (const friendId of Object.keys(friendsObj)) {
       const snap = await db.ref(`users/${friendId}`).once("value");
-      if(snap.exists()){
-        const f = snap.val();
-        friends.push({
-          uid: friendId,
-          username: f.username,
-          status: f.friendStatus || "public"
-        });
+      if (snap.exists()) {
+        const friendData = snap.val();
+        const div = document.createElement("div");
+        div.className = "friend-item";
+        div.textContent = friendData.username;
+        const removeBtn = document.createElement("button");
+        removeBtn.textContent = "Remove";
+        removeBtn.onclick = () => removeFriend(friendId);
+        div.appendChild(removeBtn);
+        container.appendChild(div);
       }
     }
-    callback(friends);
   });
 }
 
-// === GROUP CHAT SYSTEM ===
-
-// Create group chat with name + members (uids array)
+//////////////////////////////
+// GROUP CHAT SYSTEM
 async function createGroupChat(name, memberIds) {
   if (!currentUser) throw "Not signed in";
   const groupRef = db.ref("groupChats").push();
@@ -307,13 +261,11 @@ async function createGroupChat(name, memberIds) {
   return groupRef.key;
 }
 
-// Rename group chat
 async function renameGroupChat(groupId, newName) {
   if (!currentUser) throw "Not signed in";
   await db.ref(`groupChats/${groupId}`).update({ name: newName });
 }
 
-// Add members to group chat
 async function addMembersToGroupChat(groupId, memberIds) {
   if (!currentUser) throw "Not signed in";
   const updates = {};
@@ -323,7 +275,6 @@ async function addMembersToGroupChat(groupId, memberIds) {
   await db.ref().update(updates);
 }
 
-// Remove group chat (only creator)
 async function deleteGroupChat(groupId) {
   if (!currentUser) throw "Not signed in";
   const snap = await db.ref(`groupChats/${groupId}`).once("value");
@@ -332,27 +283,26 @@ async function deleteGroupChat(groupId) {
   await db.ref(`groupChats/${groupId}`).remove();
 }
 
-// === CHAT ROOMS (normal chat rooms) ===
-
-// Create chat room (room code)
+//////////////////////////////
+// CHAT ROOMS & MESSAGING
 async function createChatRoom(code) {
   await db.ref(`chatRooms/${code}`).set({
     members: { [currentUser.uid]: true },
     createdAt: Date.now()
   });
   currentRoomCode = code;
+  loadChatMessages();
 }
 
-// Join chat room
 async function joinChatRoom(code) {
   const roomRef = db.ref(`chatRooms/${code}`);
   const snap = await roomRef.once("value");
   if (!snap.exists()) throw "Room not found";
   await roomRef.child("members").child(currentUser.uid).set(true);
   currentRoomCode = code;
+  loadChatMessages();
 }
 
-// Leave chat room & delete if empty
 async function leaveChatRoom(code) {
   const roomRef = db.ref(`chatRooms/${code}/members`);
   await roomRef.child(currentUser.uid).remove();
@@ -361,44 +311,53 @@ async function leaveChatRoom(code) {
     await db.ref(`chatRooms/${code}`).remove();
   }
   currentRoomCode = "";
+  clearChatUI();
 }
 
-// Send chat message to room or group
-async function sendMessage(text, isGroup = false, groupId = "") {
-  if (!currentUser) throw "Not signed in";
+async function sendMessage(text) {
+  if (!currentUser || !currentRoomCode) throw "Not signed in or not in a room";
   const message = {
     from: currentUser.username,
     uid: currentUser.uid,
     text,
     timestamp: Date.now()
   };
-  if (isGroup && groupId) {
-    await db.ref(`groupChats/${groupId}/messages`).push(message);
-  } else if (currentRoomCode) {
-    await db.ref(`chatRooms/${currentRoomCode}/messages`).push(message);
-  }
+  await db.ref(`chatRooms/${currentRoomCode}/messages`).push(message);
 }
 
-// Listen to chat messages
-function onChatMessages(callback, isGroup = false, groupId = "") {
-  if (isGroup && groupId) {
-    db.ref(`groupChats/${groupId}/messages`).on("child_added", snapshot => {
-      callback(snapshot.val());
-    });
-  } else if (currentRoomCode) {
-    db.ref(`chatRooms/${currentRoomCode}/messages`).on("child_added", snapshot => {
-      callback(snapshot.val());
-    });
-  }
+function loadChatMessages() {
+  if (!currentRoomCode) return;
+  const container = document.getElementById("chatMessages");
+  container.innerHTML = "";
+  db.ref(`chatRooms/${currentRoomCode}/messages`).off();
+  db.ref(`chatRooms/${currentRoomCode}/messages`).on("child_added", snapshot => {
+    const msg = snapshot.val();
+    const div = document.createElement("div");
+    div.className = "chat-message";
+    const time = new Date(msg.timestamp).toLocaleTimeString();
+    div.textContent = `[${time}] ${msg.from}: ${msg.text}`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    playNotificationSound();
+  });
 }
 
-// === PONG GAME ===
+function clearChatUI() {
+  const container = document.getElementById("chatMessages");
+  if(container) container.innerHTML = "";
+}
+
+//////////////////////////////
+// PONG GAME FULL IMPLEMENTATION
+
+const pongCanvas = document.getElementById("pongCanvas");
+const pongCtx = pongCanvas?.getContext("2d");
 
 const pongGame = {
   roomId: null,
   playerId: null,
-  paddlePos: 0,
-  opponentPaddlePos: 0,
+  paddlePos: 125,
+  opponentPaddlePos: 125,
   ballX: 250,
   ballY: 125,
   ballSpeedX: 4,
@@ -406,10 +365,14 @@ const pongGame = {
   score1: 0,
   score2: 0,
   isGameRunning: false,
+
   init(roomId) {
+    if (!pongCtx) return;
+
     this.roomId = roomId;
     this.playerId = currentUser.uid;
-    this.paddlePos = 125;  // center paddle
+    this.paddlePos = 125;
+    this.opponentPaddlePos = 125;
     this.score1 = 0;
     this.score2 = 0;
     this.ballX = 250;
@@ -418,13 +381,28 @@ const pongGame = {
     this.ballSpeedY = 4;
     this.isGameRunning = true;
 
-    // Sync paddle and score to Firebase
-    this.syncGameData();
     this.listenGameData();
+
+    if (pongInterval) clearInterval(pongInterval);
+    pongInterval = setInterval(() => {
+      this.updateBall();
+      this.syncGameData();
+      this.render();
+    }, 20);
+
+    this.render();
+
+    // Add event listener for mouse to control paddle
+    pongCanvas.onmousemove = (e) => {
+      const rect = pongCanvas.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      this.paddlePos = Math.max(0, Math.min(250, y - 25));
+      this.syncGameData();
+    };
   },
+
   async syncGameData() {
     if (!this.isGameRunning) return;
-
     await db.ref(`pongRooms/${this.roomId}/players/${this.playerId}`).set({
       paddlePos: this.paddlePos
     });
@@ -439,6 +417,7 @@ const pongGame = {
       p2: this.score2
     });
   },
+
   listenGameData() {
     db.ref(`pongRooms/${this.roomId}/players`).on("value", snapshot => {
       const players = snapshot.val() || {};
@@ -449,216 +428,143 @@ const pongGame = {
           this.paddlePos = players[id].paddlePos || 125;
         }
       }
-      this.render();
     });
     db.ref(`pongRooms/${this.roomId}/ball`).on("value", snapshot => {
       const ball = snapshot.val();
-      if(ball) {
+      if (ball) {
         this.ballX = ball.x;
         this.ballY = ball.y;
         this.ballSpeedX = ball.speedX;
         this.ballSpeedY = ball.speedY;
       }
-      this.render();
     });
     db.ref(`pongRooms/${this.roomId}/scores`).on("value", snapshot => {
       const scores = snapshot.val();
-      if(scores){
+      if (scores) {
         this.score1 = scores.p1 || 0;
         this.score2 = scores.p2 || 0;
       }
-      this.render();
     });
   },
+
   updateBall() {
     this.ballX += this.ballSpeedX;
     this.ballY += this.ballSpeedY;
 
-    // Ball collision top/bottom
-    if(this.ballY < 0 || this.ballY > 250){
+    // Bounce off top and bottom
+    if (this.ballY < 0 || this.ballY > 250) {
       this.ballSpeedY = -this.ballSpeedY;
       playPongSound();
     }
-    // Ball collision paddle
-    if((this.ballX < 30 && this.ballY > this.paddlePos && this.ballY < this.paddlePos + 50) ||
-      (this.ballX > 470 && this.ballY > this.opponentPaddlePos && this.ballY < this.opponentPaddlePos + 50)) {
+
+    // Bounce off paddles
+    // Left paddle
+    if (this.ballX < 30 && this.ballY > this.paddlePos && this.ballY < this.paddlePos + 50) {
+      this.ballSpeedX = -this.ballSpeedX;
+      playPongSound();
+    }
+    // Right paddle
+    if (this.ballX > 470 && this.ballY > this.opponentPaddlePos && this.ballY < this.opponentPaddlePos + 50) {
       this.ballSpeedX = -this.ballSpeedX;
       playPongSound();
     }
 
-    // Score
-    if(this.ballX < 0){
+    // Scoring
+    if (this.ballX < 0) {
       this.score2++;
       this.resetBall();
-    } else if(this.ballX > 500){
+    } else if (this.ballX > 500) {
       this.score1++;
       this.resetBall();
     }
   },
+
   resetBall() {
     this.ballX = 250;
     this.ballY = 125;
     this.ballSpeedX = 4 * (Math.random() > 0.5 ? 1 : -1);
     this.ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1);
   },
-  render() {
-    // Render pong game UI on your canvas or elements
-    // Example: update paddle positions, ball position, scores, etc.
-  },
-  start() {
-    if(this.isGameRunning) return;
-    this.isGameRunning = true;
-    this.paddlePos = 125;
-    this.opponentPaddlePos = 125;
-    this.score1 = 0;
-    this.score2 = 0;
-    this.ballX = 250;
-    this.ballY = 125;
-    this.ballSpeedX = 4;
-    this.ballSpeedY = 4;
 
-    pongInterval = setInterval(() => {
-      this.updateBall();
-      this.syncGameData();
-    }, 20);
+  render() {
+    if (!pongCtx) return;
+    pongCtx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+
+    // Draw background
+    pongCtx.fillStyle = "#000";
+    pongCtx.fillRect(0, 0, pongCanvas.width, pongCanvas.height);
+
+    // Draw paddles
+    pongCtx.fillStyle = "white";
+    pongCtx.fillRect(10, this.paddlePos, 10, 50); // Left paddle
+    pongCtx.fillRect(480, this.opponentPaddlePos, 10, 50); // Right paddle
+
+    // Draw ball
+    pongCtx.beginPath();
+    pongCtx.arc(this.ballX, this.ballY, 7, 0, Math.PI * 2);
+    pongCtx.fill();
+
+    // Draw scores
+    pongCtx.font = "24px monospace";
+    pongCtx.fillText(this.score1, 200, 30);
+    pongCtx.fillText(this.score2, 300, 30);
   },
-  stop() {
+
+   stop() {
     this.isGameRunning = false;
     clearInterval(pongInterval);
+    pongCanvas.onmousemove = null;
+    if (pongCtx) {
+      pongCtx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+    }
   }
 };
 
-function playPongSound(){
-  if(notificationSoundEnabled){
+function playPongSound() {
+  if (notificationSoundEnabled) {
     notificationAudio.currentTime = 0;
     notificationAudio.play();
   }
 }
 
-// === ASTEROID DEFENSE GAME ===
 
-const asteroidGame = {
-  health: 3,
-  maxHealth: 3,
-  score: 0,
-  powerUps: [],
-  activePowerUps: [],
-  asteroids: [],
-  boss: null,
-  powerUpTimers: {},
-  tankMissiles: 0,
-  tankCooldown: 0,
-  cloverActive: false,
-  hourglassActive: false,
-  init() {
-    this.health = 3;
-    this.maxHealth = 3;
-    this.score = 0;
-    this.powerUps = [];
-    this.activePowerUps = [];
-    this.asteroids = [];
-    this.boss = null;
-    this.powerUpTimers = {};
-    this.tankMissiles = 0;
-    this.tankCooldown = 0;
-    this.cloverActive = false;
-    this.hourglassActive = false;
-    this.spawnLoop();
-  },
-  spawnLoop() {
-    asteroidInterval = setInterval(() => {
-      // Spawn asteroids based on timing, increase difficulty with score
-      this.spawnAsteroid();
-      this.updateGame();
-    }, this.hourglassActive ? 1500 : 1000);
-  },
-  spawnAsteroid() {
-    // Logic to spawn asteroids of different types and colors with different health and score values
-    // Random spawn position top of screen
-    // Add to this.asteroids array
-  },
-  updateGame() {
-    // Move asteroids down, check collisions with Earth
-    // Handle power-up drops
-    // Update UI, health, score, boss status
-  },
-  activatePowerUp(type) {
-    // Add power-up effect (heart, clover, hourglass, hammer, bomb, tank, lightning, mystery)
-    // Manage timers for power-ups
-  },
-  fireTankMissile() {
-    if(this.tankMissiles > 0 && this.tankCooldown <= 0){
-      this.tankMissiles--;
-      this.tankCooldown = 10; // cooldown seconds
-      // Damage asteroids or boss
-    }
-  },
-  takeDamage(amount) {
-    this.health -= amount;
-    if(this.health <= 0){
-      this.gameOver();
-    }
-  },
-  gameOver() {
-    clearInterval(asteroidInterval);
-    alert("Game Over! Your score: " + this.score);
-  }
-};
+// Get the Pong canvas and context
+const pongCanvas = document.getElementById("pongCanvas");
+const pongCtx = pongCanvas ? pongCanvas.getContext("2d") : null;
 
-// === UI AND NOTIFICATIONS ===
-
-function showToast(message) {
-  // Implement toast notification with fade in/out
-  console.log("Toast:", message);
+// Mouse move handler to control player's paddle
+if (pongCanvas) {
+  pongCanvas.addEventListener("mousemove", (event) => {
+    // Calculate paddle position based on mouse Y relative to canvas
+    const rect = pongCanvas.getBoundingClientRect();
+    let mouseY = event.clientY - rect.top;
+    // Keep paddle inside canvas bounds
+    pongGame.paddlePos = Math.max(0, Math.min(mouseY - 25, pongCanvas.height - 50));
+  });
 }
 
-function playNotificationSound() {
-  if(notificationSoundEnabled){
-    notificationAudio.currentTime = 0;
-    notificationAudio.play();
-  }
+// Start the Pong game loop
+function startPongGame(roomId) {
+  pongGame.init(roomId);
+  pongGame.start();
+
+  // Game update loop at 50 FPS
+  pongInterval = setInterval(() => {
+    pongGame.updateBall();
+    pongGame.syncGameData();
+    pongGame.render();
+  }, 20);
 }
 
-// === RICKROLL EASTER EGG ===
-
-function startRickRoll() {
-  isRickRollMode = true;
-  rickrollAudio.play();
-  // Display video flying across screen and snippets playing on chat messages
+// Stop the Pong game and clean up
+function stopPongGame() {
+  pongGame.stop();
+  clearInterval(pongInterval);
 }
 
-function stopRickRoll() {
-  isRickRollMode = false;
-  rickrollAudio.pause();
-  rickrollAudio.currentTime = 0;
-  // Remove flying video if any
-}
+// Example: to start pong in room "room123", call:
+// startPongGame("room123");
 
-// === MISC FUNCTIONS ===
+// You may want to call stopPongGame() when leaving or ending the game.
 
-// Save last 20 chat messages to user account (for chat history download)
-async function saveLastMessages(messages) {
-  if (!currentUser) return;
-  const last20 = messages.slice(-20);
-  await db.ref(`users/${currentUser.uid}/last20Messages`).set(last20);
-}
-
-// Other helper functions and UI event listeners below...
-
-// === Event Listeners and UI Interaction Logic ===
-
-// Example: Hook sign-up form submit
-document.getElementById("signupForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  try {
-    const username = e.target.username.value;
-    const password = e.target.password.value;
-    await signUp(username, password);
-    showToast("Signed up successfully!");
-  } catch (err) {
-    showToast(err);
-  }
-});
-
-// ... Similar hooks for sign-in, password reset, friend requests, chat sending, pong controls ...
 
