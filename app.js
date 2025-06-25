@@ -62,14 +62,44 @@ setTimeout(() => {
   if (bgMusicEnabled) bgMusic.play().catch(() => {});
 }, 5500);
 
-// Account System (unchanged from previous, simplified here)
 auth.onAuthStateChanged(user => {
   const statusText = document.getElementById("account-status-text");
   statusText.textContent = user ? `Signed in as ${user.email.split("@")[0]}` : "You are not signed in.";
   document.getElementById("temp-username").classList.toggle("hidden", !!user);
 });
 
-// Chat Room (simplified example with Rickroll)
+let currentUsers = new Set();
+db.ref(".info/connected").on("value", snap => {
+  if (snap.val() && auth.currentUser) {
+    const con = db.ref(`presence/${auth.currentUser.uid}`);
+    con.onDisconnect().remove();
+    con.set(true);
+    db.ref("presence").on("value", snap => {
+      currentUsers = new Set(Object.keys(snap.val() || {}));
+    });
+  }
+});
+
+function handleDrop(event) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (file && file.type === "text/plain") {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const roomId = document.getElementById("room-code-display").textContent;
+      const isGroup = !document.getElementById("group-chat-dropdown").classList.contains("hidden");
+      const path = isGroup ? `groupChats/${roomId}/messages` : `rooms/${roomId}/messages`;
+      db.ref(path).push({
+        sender: auth.currentUser?.email.split("@")[0] || document.getElementById("temp-username").value || "Guest",
+        text: `Uploaded .txt: ${e.target.result}`,
+        time: Date.now(),
+        type: "file"
+      });
+    };
+    reader.readAsText(file);
+  }
+}
+
 document.getElementById("chat-send").addEventListener("click", () => {
   const input = document.getElementById("chat-input");
   const roomId = document.getElementById("room-code-display").textContent;
@@ -89,51 +119,69 @@ document.getElementById("chat-send").addEventListener("click", () => {
     setInterval(() => {
       if (notifSoundEnabled) rickrollSound.play().catch(() => {});
     }, 10000);
+  } else if (input.value === "brodychem6(<pong>)" && currentUsers.size >= 1) {
+    document.getElementById("pong-modal").classList.remove("hidden");
+    startPongGame();
   }
   input.value = "";
 });
 
-// Pong (simplified, unchanged from previous)
 const pongCanvas = document.getElementById("pong-canvas");
 pongCanvas.width = 600;
 pongCanvas.height = 400;
 const ctx = pongCanvas.getContext("2d");
 let playerPaddle = { x: 10, y: pongCanvas.height / 2 - 30, score: 0 };
-let aiPaddle = { x: pongCanvas.width - 20, y: pongCanvas.height / 2 - 30, score: 0 };
+let opponentPaddle = { x: pongCanvas.width - 20, y: pongCanvas.height / 2 - 30, score: 0 };
 let ball = { x: pongCanvas.width / 2, y: pongCanvas.height / 2, dx: 5, dy: 5 };
+let gameActive = false;
 
-function startPong() {
-  ctx.fillStyle = "#0ff";
-  ctx.fillText("GO!", pongCanvas.width / 2 - 20, pongCanvas.height / 2);
-  setTimeout(gameLoop, 1000);
+function startPongGame() {
+  const userCount = currentUsers.size;
+  document.getElementById("opponent-name").textContent = "";
+  if (userCount === 1) {
+    document.getElementById("opponent-name").textContent = "AI";
+  } else if (userCount === 2) {
+    const users = Array.from(currentUsers);
+    document.getElementById("opponent-name").textContent = users.filter(u => u !== auth.currentUser?.uid)[0] || "Opponent";
+  } else if (userCount >= 4) {
+    const pongInitiator = auth.currentUser?.uid;
+    const otherUsers = Array.from(currentUsers).filter(u => u !== pongInitiator);
+    const randomOpponent = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+    document.getElementById("opponent-name").textContent = randomOpponent || "Random Opponent";
+  }
+  gameActive = true;
+  resetBall();
+  gameLoop();
 }
 
 function gameLoop() {
+  if (!gameActive) return;
   ctx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
   ctx.fillStyle = "#0ff";
   ctx.fillRect(playerPaddle.x, playerPaddle.y, 10, 60);
-  ctx.fillRect(aiPaddle.x, aiPaddle.y, 10, 60);
+  if (currentUsers.size === 1) {
+    opponentPaddle.y += (ball.y - (opponentPaddle.y + 30)) * 0.1; // AI movement
+  }
+  ctx.fillRect(opponentPaddle.x, opponentPaddle.y, 10, 60);
   ctx.fillRect(ball.x, ball.y, 10, 10);
   ctx.fillText(playerPaddle.score, pongCanvas.width / 4, 30);
-  ctx.fillText(aiPaddle.score, 3 * pongCanvas.width / 4, 30);
+  ctx.fillText(opponentPaddle.score, 3 * pongCanvas.width / 4, 30);
   ball.x += ball.dx;
   ball.y += ball.dy;
   if (ball.y <= 0 || ball.y >= pongCanvas.height - 10) ball.dy *= -1;
   if (ball.x <= playerPaddle.x + 10 && ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + 60) ball.dx *= -1;
-  if (ball.x >= aiPaddle.x - 10 && ball.y >= aiPaddle.y && ball.y <= aiPaddle.y + 60) ball.dx *= -1;
-  if (ball.x <= 0) { aiPaddle.score++; resetBall(); }
+  if (ball.x >= opponentPaddle.x - 10 && ball.y >= opponentPaddle.y && ball.y <= opponentPaddle.y + 60) ball.dx *= -1;
+  if (ball.x <= 0) { opponentPaddle.score++; resetBall(); }
   if (ball.x >= pongCanvas.width - 10) { playerPaddle.score++; resetBall(); }
-  if (playerPaddle.score >= 10 || aiPaddle.score >= 10) {
-    alert(`Game Over! ${playerPaddle.score >= 10 ? "You" : "AI"} Win!`);
+  if (playerPaddle.score >= 10 || opponentPaddle.score >= 10) {
+    alert(`Game Over! ${playerPaddle.score >= 10 ? "You" : "Opponent"} Win!`);
     document.getElementById("pong-modal").classList.add("hidden");
+    gameActive = false;
     return;
   }
-  aiPaddle.y += (ball.y - (aiPaddle.y + 30)) * 0.1;
   document.addEventListener("keydown", e => {
-    if (e.key === "w") playerPaddle.y -= 5;
-    if (e.key === "s") playerPaddle.y += 5;
-    if (playerPaddle.y < 0) playerPaddle.y = 0;
-    if (playerPaddle.y > pongCanvas.height - 60) playerPaddle.y = pongCanvas.height - 60;
+    if (e.key === "w" && playerPaddle.y > 0) playerPaddle.y -= 5;
+    if (e.key === "s" && playerPaddle.y < pongCanvas.height - 60) playerPaddle.y += 5;
   });
   requestAnimationFrame(gameLoop);
 }
@@ -145,11 +193,11 @@ function resetBall() {
   ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
 }
 
-document.getElementById("confirm-difficulty").addEventListener("click", startPong);
+document.getElementById("confirm-difficulty").addEventListener("click", startPongGame);
 
-// Tutorial (updated with Settings step)
 const tutorialSteps = [
   { text: "Welcome! Click Account to sign in or sign up.", element: "#account-dropdown", action: () => document.getElementById("account-content").classList.add("show") },
+  { text: "Drag a .txt file here or type to chat.", element: "#chat-input-area", action: () => {} },
   { text: "Click Settings to adjust audio.", element: "#settings", action: () => document.getElementById("settings-modal").classList.remove("hidden") },
   { text: "You’re set! Explore Chem Chat 1.9!", element: null, action: () => document.getElementById("settings-modal").classList.add("hidden") }
 ];
