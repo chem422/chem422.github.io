@@ -15,22 +15,6 @@ body {
   z-index: 1000;
 }
 
-#explosion {
-  position: absolute;
-  width: 100px;
-  height: 100px;
-  background: url('explosion_PNG15349.png') no-repeat center/contain;
-  top: 50vh;
-  left: 50vw;
-  transform: translate(-50%, -50%);
-  animation: explode 0.5s ease-out 3s forwards;
-}
-
-@keyframes explode {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
 .star {
   position: absolute;
   width: 5px;
