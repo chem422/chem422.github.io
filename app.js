@@ -1,13 +1,14 @@
 // 🔧 INSERT YOUR FIREBASE CONFIG HERE:
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+    const firebaseConfig = {
+    apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
+    authDomain: "chat-room-22335.firebaseapp.com",
+    projectId: "chat-room-22335",
+    storageBucket: "chat-room-22335.firebasestorage.app",
+    messagingSenderId: "20974926341",
+    appId: "1:20974926341:web:c413eb3122887d6803fa6c",
+    measurementId: "G-WB5QY60EG6"
+  };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
