@@ -1,222 +1,52 @@
 body {
+  background: #121212;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
   margin: 0;
-  background: url('space.jpg') no-repeat center/cover;
-  color: #0ff;
-  font-family: 'Orbitron', sans-serif;
-  overflow: hidden;
+  padding: 0;
 }
 
-#intro {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1000;
-}
-
-.star {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  background: #fff;
-  border-radius: 50%;
-  animation: twinkle 2s ease-in-out 3.5s forwards;
-}
-
-@keyframes twinkle {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0); }
-}
-
-#earth { width: 100px; bottom: 20px; left: 20px; }
-#moon { width: 30px; bottom: 100px; left: 100px; }
-
-#main {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-#main-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 300px;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.7);
+.container {
+  max-width: 400px;
+  margin: 60px auto;
   padding: 20px;
-  border: 2px solid #0ff;
-  border-radius: 10px;
+}
+
+input, button, textarea {
+  padding: 10px;
+  margin: 8px 0;
+  width: 100%;
+  font-size: 16px;
+  border-radius: 5px;
+  border: none;
+}
+
+input, textarea {
+  background: #2e2e2e;
+  color: white;
 }
 
 button {
-  padding: 10px;
-  font-size: 16px;
-  background: rgba(0, 255, 255, 0.2);
-  border: 2px solid #0ff;
-  color: #0ff;
-  border-radius: 5px;
+  background: #2196F3;
+  color: white;
   cursor: pointer;
-  transition: all 0.3s;
-  z-index: 1;
 }
 
-button:hover {
-  background: rgba(0, 255, 255, 0.5);
-  transform: scale(1.05);
-}
-
-.red { background: rgba(255, 0, 0, 0.2); border: 2px solid #f00; }
-.red:hover { background: rgba(255, 0, 0, 0.5); }
-
-input, select {
-  padding: 10px;
-  font-size: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid #0ff;
-  color: #0ff;
-  border-radius: 5px;
-}
-
-.dropdown {
-  position: fixed;
-  z-index: 20;
-}
-
-#account-dropdown {
-  top: 10px;
-  right: 10px;
-}
-
-#friends-dropdown {
-  top: 10px;
-  right: 40%;
-}
-
-#group-chat-dropdown {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-
-.dropdown-content {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px;
-  border: 1px solid #0ff;
-  border-radius: 5px;
-  display: none;
-  transition: opacity 0.3s;
-  z-index: 21;
-}
-
-.dropdown-content.hidden {
+#chatArea {
   display: none;
 }
 
-.dropdown-content.show {
-  display: block;
-  opacity: 1;
-}
-
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.9);
-  padding: 20px;
-  border: 2px solid #0ff;
-  border-radius: 10px;
-  z-index: 100;
-  animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-  0% { opacity: 0; transform: translate(-50%, -60%); }
-  100% { opacity: 1; transform: translate(-50%, -50%); }
-}
-
-.back {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 101;
-}
-
-#pong-canvas {
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid #0ff;
-  width: 90vw;
-  height: 60vw;
-  max-width: 600px;
-  max-height: 400px;
-}
-
-.difficulty-btn, .control-btn {
-  margin: 5px;
-  z-index: 102;
-}
-
-.difficulty-btn.selected, .control-btn.selected {
-  background: #0ff;
-  color: #000;
-}
-
-#phone-controls {
-  display: none;
-}
-
-#phone-controls.active {
-  display: block;
-}
-
-#chat-messages {
-  height: 200px;
-  overflow-y: auto;
-  margin: 10px 0;
+#messages {
+  background: #1e1e1e;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid #0ff;
+  height: 250px;
+  overflow-y: scroll;
   border-radius: 5px;
+  margin-top: 10px;
+  text-align: left;
 }
 
-#chat-input-area {
-  display: flex;
-  gap: 5px;
-}
-
-#friends-list {
-  margin-bottom: 10px;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-#notification-popup {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px;
-  border: 1px solid #0ff;
-  border-radius: 5px;
-  z-index: 200;
-}
-
-.hidden {
-  display: none;
-}
-
-@media (max-width: 600px) {
-  #earth { width: 50px; bottom: 10px; left: 10px; }
-  #moon { width: 15px; bottom: 50px; left: 50px; }
-  #main-menu { width: 90%; }
-  button, input { font-size: 14px; }
-  #account-dropdown { right: 5%; }
-  #friends-dropdown { right: 45%; }
-  #pong-canvas { width: 90vw; height: 60vw; }
-  #chat-messages { height: 150px; }
-  #friends-list { max-height: 80px; }
+textarea:focus {
+  outline: none;
 }
