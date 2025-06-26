@@ -23,20 +23,11 @@ const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const sendMessageBtn = document.getElementById('send-message');
 const leaveRoomBtn = document.getElementById('leave-room');
+const notificationSound = document.getElementById('notification-sound');
 
 // Global variables
 let currentRoom = null;
 let username = `User${Math.floor(Math.random() * 1000)}`;
-
-// Generate a random 5-character room code
-function generateRoomCode() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 5; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-}
 
 // Switch between main menu and chat room
 function showChatRoom(roomCode) {
@@ -53,6 +44,12 @@ function showMainMenu() {
     currentRoom = null;
     messagesContainer.innerHTML = '';
     roomCodeInput.value = '';
+}
+
+// Play notification sound
+function playNotificationSound() {
+    notificationSound.currentTime = 0; // Rewind to start in case it's playing
+    notificationSound.play().catch(e => console.log("Audio play failed:", e));
 }
 
 // Send a message to the current room
@@ -90,6 +87,7 @@ function displayMessage(message) {
     } else {
         messageElement.classList.add('received');
         messageElement.innerHTML = `<strong>${message.sender}:</strong> ${message.text}`;
+        playNotificationSound(); // Play sound for received messages
     }
     
     messagesContainer.appendChild(messageElement);
@@ -98,23 +96,27 @@ function displayMessage(message) {
 
 // Event Listeners
 startChatBtn.addEventListener('click', () => {
-    const roomCode = generateRoomCode();
-    showChatRoom(roomCode);
+    const customRoomName = prompt("Enter a name for your chat room:");
+    if (customRoomName && customRoomName.trim() !== "") {
+        showChatRoom(customRoomName.trim());
+    } else {
+        alert("Please enter a valid room name");
+    }
 });
 
 joinChatBtn.addEventListener('click', () => {
-    const roomCode = roomCodeInput.value.trim().toUpperCase();
-    if (roomCode.length === 5) {
+    const roomCode = roomCodeInput.value.trim();
+    if (roomCode !== "") {
         // Check if room exists
         database.ref(`rooms/${roomCode}`).once('value').then((snapshot) => {
             if (snapshot.exists()) {
                 showChatRoom(roomCode);
             } else {
-                alert('Room not found. Please check the code and try again.');
+                alert('Room not found. Please check the name and try again.');
             }
         });
     } else {
-        alert('Please enter a valid 5-character room code.');
+        alert('Please enter a room name.');
     }
 });
 
