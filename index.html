@@ -1,32 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Realtime Chat Room</title>
-  <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Chat Room</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-  <div class="container">
-    <div id="mainMenu">
-      <h2>Chat Room</h2>
-      <button onclick="startRoom()">Start New Room</button>
-      <input id="roomInput" placeholder="Enter Room Code">
-      <button onclick="joinRoom()">Join Room</button>
+    <div class="app-container">
+        <!-- Main Menu -->
+        <div id="main-menu" class="menu-container">
+            <h1>Chat Room</h1>
+            <button id="start-chat" class="btn">Start New Chat</button>
+            <div class="separator">OR</div>
+            <input type="text" id="room-code" placeholder="Enter Room Code" maxlength="5">
+            <button id="join-chat" class="btn">Join Chat</button>
+        </div>
+
+        <!-- Chat Room -->
+        <div id="chat-room" class="chat-container hidden">
+            <div class="chat-header">
+                <h2>Room: <span id="current-room-code"></span></h2>
+                <button id="leave-room" class="btn small">Leave</button>
+            </div>
+            <div id="messages" class="messages-container"></div>
+            <div class="message-input">
+                <input type="text" id="message-input" placeholder="Type your message...">
+                <button id="send-message" class="btn">Send</button>
+            </div>
+        </div>
     </div>
 
-    <div id="chatArea">
-      <h3>Room Code: <span id="currentRoomCode"></span></h3>
-      <div id="messages"></div>
-      <textarea id="messageInput" placeholder="Type message..." rows="3" style="resize: vertical;"></textarea>
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
