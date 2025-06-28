@@ -1,14 +1,22 @@
-/* === Chem Chat 1.9 Visual Polish & Mobile Support === */
+/* === Base Layout === */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to bottom, #000015, #001);
-  color: #fff;
   overflow-x: hidden;
-  padding: 0;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* Buttons and Inputs */
+/* === Dark & Light Themes === */
+body.dark {
+  background: linear-gradient(to bottom, #000015, #001);
+  color: #fff;
+}
+body.light {
+  background: #f4f4f4;
+  color: #111;
+}
+
+/* === Buttons and Inputs === */
 button, input {
   font-family: inherit;
   border: none;
@@ -21,12 +29,10 @@ button, input {
   transition: background 0.2s, transform 0.2s;
   cursor: pointer;
 }
-
 button:hover {
   background: #444;
   transform: scale(1.05);
 }
-
 input[type="text"], input[type="password"] {
   background: #111;
   border: 1px solid #333;
@@ -37,11 +43,11 @@ input[type="text"], input[type="password"] {
   margin-bottom: 10px;
 }
 
-/* Modal System */
+/* === Modal === */
 .modal {
   background: #111822;
   color: #eee;
-  max-width: 450px;
+  max-width: 500px;
   width: 90%;
   margin: 10vh auto;
   padding: 20px;
@@ -55,34 +61,11 @@ input[type="text"], input[type="password"] {
   background: rgba(0,0,0,0.4);
   z-index: 999;
 }
-
-/* Chat box */
-#chat-box {
-  border: 1px solid #333;
-  background: #0b0b16;
-  border-radius: 12px;
-  padding: 8px;
-  margin-bottom: 10px;
-  overflow-y: auto;
-  max-height: 250px;
-}
-#chat-box p {
-  margin: 5px 0;
+#modal-space {
+  z-index: 9999;
 }
 
-/* Custom scrollbars */
-#chat-box::-webkit-scrollbar {
-  width: 8px;
-}
-#chat-box::-webkit-scrollbar-track {
-  background: transparent;
-}
-#chat-box::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 5px;
-}
-
-/* Dropdown buttons */
+/* === Dropdowns === */
 .dropbtn {
   background: #1a1a2f;
   border-radius: 10px;
@@ -94,10 +77,73 @@ input[type="text"], input[type="password"] {
   border-radius: 10px;
   padding: 10px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  position: absolute;
   z-index: 1000;
 }
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
 
-/* Friend request popup */
+/* === File Upload Drop Zone === */
+#upload-preview {
+  font-size: 13px;
+  margin-top: 8px;
+  color: #aaa;
+}
+#file-drop-input {
+  display: none;
+}
+#modal-container .modal div[style*="dashed"] {
+  background: rgba(255,255,255,0.03);
+  transition: border 0.2s ease;
+}
+
+/* === Scrollbars === */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* === Floating Earth and Moon === */
+img[alt="Earth"], img[alt="Moon"] {
+  position: fixed;
+  cursor: pointer;
+  z-index: 900;
+}
+img[alt="Earth"] {
+  bottom: 20px;
+  left: 20px;
+  width: 60px;
+}
+img[alt="Moon"] {
+  bottom: 100px;
+  left: 60px;
+  width: 40px;
+}
+
+/* === Chat UI === */
+#chat-box {
+  border: 1px solid #333;
+  background: #0b0b16;
+  border-radius: 12px;
+  padding: 8px;
+  margin: 10px auto;
+  overflow-y: auto;
+  max-height: 250px;
+  width: 90%;
+}
+#chat-box p {
+  margin: 5px 0;
+}
+
+/* === Friend Request Popups === */
 .friend-request-popup {
   position: fixed;
   bottom: 20px;
@@ -110,37 +156,7 @@ input[type="text"], input[type="password"] {
   font-size: 14px;
 }
 
-/* Checkbox scaling */
-input[type="checkbox"] {
-  margin-right: 5px;
-  transform: scale(1.2);
-}
-
-/* Headings */
-h3 {
-  margin-top: 0;
-  font-size: 20px;
-  text-align: center;
-}
-
-/* Floating Earth & Moon */
-img[alt="Earth"], img[alt="Moon"] {
-  position: fixed;
-  bottom: 20px;
-  width: 60px;
-  cursor: pointer;
-  z-index: 900;
-}
-img[alt="Moon"] {
-  bottom: 100px;
-  width: 40px;
-  left: 60px;
-}
-img[alt="Earth"] {
-  left: 20px;
-}
-
-/* Rainbow Easter Egg */
+/* === Rainbow Mode === */
 @keyframes rainbow-bg {
   0%   { background-color: red; }
   20%  { background-color: orange; }
@@ -149,8 +165,11 @@ img[alt="Earth"] {
   80%  { background-color: blue; }
   100% { background-color: violet; }
 }
+.rainbow {
+  animation: rainbow-bg 3s linear infinite;
+}
 
-/* === Responsive Mobile Layout === */
+/* === Responsive Mobile Support === */
 @media (max-width: 600px) {
   body {
     font-size: 16px;
@@ -173,18 +192,6 @@ img[alt="Earth"] {
   #chat-box {
     max-height: 200px;
     font-size: 14px;
-  }
-  #modal-container {
-    padding: 10px;
-  }
-  input[type="text"], input[type="password"] {
-    width: 100%;
-    margin: 8px 0;
-  }
-  .dropdown-content {
-    position: static;
-    width: 100%;
-    box-sizing: border-box;
   }
   .friend-request-popup {
     right: 5%;
