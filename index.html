@@ -5,43 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chem Chat 1.9</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico" />
 </head>
-<body>
-  <!-- 🌌 Space Background -->
-  <div id="background"></div>
+<body class="dark">
+  <!-- 🌌 Background is styled in CSS -->
 
-  <!-- 🚀 Main Menu -->
-  <div style="text-align: center; padding-top: 10vh;">
-    <h1 style="font-size: 32px;">🚀 Chem Chat 1.9</h1>
-    <button id="start-chat">Start Room Chat</button>
-    <br />
-    <input id="room-code" placeholder="Enter Room Code">
-    <button id="join-chat">Join Room</button>
-    <br />
+  <!-- 🚀 Main UI -->
+  <div id="main-ui" style="text-align: center; padding-top: 10vh;">
+    <h1>🚀 Chem Chat 1.9</h1>
+    <button id="start-chat" onclick="startChatRoom()">Start Room Chat</button><br />
+    <input id="room-code" placeholder="Enter Room Code" />
+    <button id="join-chat" onclick="joinChatRoom()">Join Room</button><br />
     <button onclick="showCreateGroupChat()">Join Group Chat</button>
-    <button id="tutorial-btn">Tutorial</button>
+    <button id="tutorial-btn" onclick="showTutorialStep(0)">Tutorial</button>
     <button onclick="showSettings()">Settings</button>
+    <button onclick="toggleTheme()">Toggle Theme</button>
   </div>
 
-  <!-- 🔽 Account Dropdown -->
+  <!-- 🔽 Account Menu -->
   <div style="position: fixed; top: 10px; right: 10px;">
     <div class="dropdown">
-      <button class="dropbtn">Account ⬇</button>
+      <button class="dropbtn">👤 Account</button>
       <div class="dropdown-content">
         <button onclick="showSignUp()">Sign Up</button>
         <button onclick="showSignIn()">Sign In</button>
-        <button id="account-download-btn">Download Account</button>
-        <button id="reset-pass-btn-main">Reset Password</button>
-        <button id="delete-account-btn">Delete Account</button>
+        <button onclick="downloadAccountData()">Download Account</button>
+        <button onclick="showResetPassword()">Reset Password</button>
+        <button onclick="showDeleteAccount()">Delete Account</button>
         <button onclick="closeModal()">Back</button>
       </div>
     </div>
   </div>
 
-  <!-- 🔽 Friends Dropdown -->
+  <!-- 🔽 Friends Menu -->
   <div style="position: fixed; top: 10px; right: 140px;">
     <div class="dropdown">
-      <button class="dropbtn">Friends ⬇</button>
+      <button class="dropbtn">👥 Friends</button>
       <div class="dropdown-content">
         <button onclick="showAddFriend()">Add Friend</button>
         <button onclick="showFriendsList()">Friend List</button>
@@ -51,14 +50,16 @@
     </div>
   </div>
 
-  <!-- 🪐 Earth & Moon loaded in JS -->
+  <!-- 🌍 Earth & Moon icons will be auto-injected via JS -->
+  <!-- 🪐 Games: Asteroid Defense and Pong -->
 
-  <!-- 📜 Modals will appear here -->
+  <!-- 🪟 Modal Space -->
   <div id="modal-space"></div>
 
-  <!-- 🔗 JS App Logic -->
+  <!-- 🔗 Firebase + App Script -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
