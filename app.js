@@ -11,32 +11,32 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 let currentAccount = null;
+let currentRoomCode = null;
 
-// === UI & Theme Setup ===
+// === UI + THEME ===
 function applyTheme(mode) {
   document.body.className = mode;
   localStorage.setItem("theme", mode);
-  if (currentAccount) db.ref("users/" + currentAccount.accountCode + "/theme").set(mode);
 }
 function toggleTheme() {
-  applyTheme(document.body.className === "dark" ? "light" : "dark");
+  const mode = document.body.className === "dark" ? "light" : "dark";
+  applyTheme(mode);
 }
 function loadTheme() {
-  const theme = localStorage.getItem("theme") || "dark";
-  applyTheme(theme);
+  applyTheme(localStorage.getItem("theme") || "dark");
 }
 function detectUIMode() {
-  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const saved = localStorage.getItem("uiMode");
-  if (saved) document.body.classList.add("ui-" + saved);
-  else {
-    const choice = mobile ? "mobile" : "pc";
-    localStorage.setItem("uiMode", choice);
-    document.body.classList.add("ui-" + choice);
-  }
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  const mode = localStorage.getItem("uiMode") || (isMobile ? "mobile" : "pc");
+  document.body.classList.add("ui-" + mode);
+  localStorage.setItem("uiMode", mode);
 }
 
-// === Account System ===
+// === ACCOUNT ===
+function generateCode(length = 10) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
 function showSignUp() {
   showModal(`
     <h3>Sign Up</h3>
@@ -45,17 +45,13 @@ function showSignUp() {
     <button onclick="createAccount()">Create</button>
   `);
 }
-function generateCode(len = 10) {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
-  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
 function createAccount() {
-  const user = document.getElementById("su-user").value.trim();
-  const pass = document.getElementById("su-pass").value;
+  const username = document.getElementById("su-user").value;
+  const password = document.getElementById("su-pass").value;
   const code = generateCode();
-  db.ref("users/" + code).set({ username: user, password: pass, status: "public", friends: [] });
-  currentAccount = { username: user, password: pass, accountCode: code };
-  alert("Your account code is: " + code);
+  db.ref("users/" + code).set({ username, password, status: "public", friends: [] });
+  currentAccount = { username, password, accountCode: code };
+  alert("Account created! Your code is: " + code);
   closeModal();
   updateAccountMenu();
 }
@@ -72,16 +68,20 @@ function signIn() {
   const pass = document.getElementById("si-pass").value;
   db.ref("users/" + code).get().then(snap => {
     const acc = snap.val();
-    if (!acc || acc.password !== pass) return alert("Invalid credentials.");
+    if (!acc || acc.password !== pass) return alert("Login failed.");
     currentAccount = { username: acc.username, password: pass, accountCode: code };
-    alert("Welcome back, " + acc.username);
+    alert("Welcome " + acc.username);
     closeModal();
     updateAccountMenu();
   });
 }
+function signOut() {
+  currentAccount = null;
+  updateAccountMenu();
+  alert("Signed out.");
+}
 function updateAccountMenu() {
   const menu = document.getElementById("account-dropdown");
-  menu.innerHTML = "";
   if (!currentAccount) {
     menu.innerHTML = `
       <button onclick="showSignUp()">Sign Up</button>
@@ -90,48 +90,30 @@ function updateAccountMenu() {
   } else {
     menu.innerHTML = `
       <button onclick="downloadAccountData()">Download Account</button>
-      <button onclick="resetPassword()">Reset Password</button>
-      <button onclick="deleteAccount()">Delete Account</button>
       <button onclick="signOut()">Sign Out</button>
     `;
   }
 }
-function signOut() {
-  currentAccount = null;
-  updateAccountMenu();
-  alert("Signed out.");
-}
 
-// === Dropdown Toggles ===
+// === DROPDOWNS ===
 function toggleAccountMenu() {
-  const menu = document.getElementById("account-dropdown");
-  menu.style.display = (menu.style.display === "block") ? "none" : "block";
+  const el = document.getElementById("account-dropdown");
+  el.style.display = el.style.display === "block" ? "none" : "block";
 }
 function toggleFriendsMenu() {
-  const menu = document.getElementById("friends-dropdown");
+  const el = document.getElementById("friends-dropdown");
   if (!currentAccount) {
-    menu.innerHTML = `<p style="padding:10px;">You're not signed in.</p>`;
+    el.innerHTML = `<p style="padding:10px;">You're not signed in.</p>`;
   } else {
-    menu.innerHTML = `
+    el.innerHTML = `
       <button onclick="addFriend()">Add Friend</button>
       <button onclick="viewFriends()">Friend List</button>
-      <button onclick="showGroupMenu()">Create Group Chat</button>
     `;
   }
-  menu.style.display = (menu.style.display === "block") ? "none" : "block";
+  el.style.display = el.style.display === "block" ? "none" : "block";
 }
 
-// === Modal System ===
-function showModal(html) {
-  const box = document.getElementById("modal-container");
-  box.innerHTML = `<div class="modal">${html}<br><button onclick="closeModal()">Close</button></div>`;
-}
-function closeModal() {
-  const box = document.getElementById("modal-container");
-  box.innerHTML = "";
-}
-
-// === Chat System ===
+// === CHAT ROOMS ===
 function startRoomChat() {
   const code = generateCode(6);
   joinRoom(code);
@@ -144,24 +126,38 @@ function joinRoomPrompt() {
   `);
 }
 function joinRoom(code) {
+  currentRoomCode = code;
+  document.getElementById("main-ui").style.display = "none";
+  document.getElementById("chat-container").style.display = "block";
   alert("Joined room: " + code);
-  // future: init chat sync here
 }
 
-// === Games ===
-function startPongGame() {
-  showModal(`<iframe src="pong-game.html" style="width:100%;height:400px;border:none;"></iframe>`);
-}
-function startAsteroidGame() {
-  showModal(`<iframe src="asteroid-game.html" style="width:100%;height:500px;border:none;"></iframe>`);
+// === SEND MESSAGE (placeholder for now) ===
+function sendMessage() {
+  const input = document.getElementById("chat-input");
+  const msg = input.value.trim();
+  if (!msg) return;
+  processMessage(msg);
+  const box = document.getElementById("chat-box");
+  box.innerHTML += `<p><b>You:</b> ${msg}</p>`;
+  input.value = "";
 }
 
-// === Easter Eggs ===
+// === MODALS ===
+function showModal(html) {
+  const box = document.getElementById("modal-container");
+  box.innerHTML = `<div class="modal">${html}<br><button onclick="closeModal()">Close</button></div>`;
+}
+function closeModal() {
+  document.getElementById("modal-container").innerHTML = "";
+}
+
+// === EASTER EGGS ===
 function processMessage(msg) {
   if (msg === "brodychem442/haha\\") document.body.classList.add("rainbow");
   if (msg === "brodychem442/stop\\") document.body.classList.remove("rainbow");
   if (msg === "rickroll(<io>)") triggerRickRoll();
-  if (msg === "brodychem6(<pong>)") startPongGame();
+  if (msg === "brodychem6(<pong>)") showModal(`<iframe src="pong-game.html" style="width:100%;height:60vh;border:none;"></iframe>`);
 }
 function triggerRickRoll() {
   const img = document.createElement("img");
@@ -170,19 +166,24 @@ function triggerRickRoll() {
   img.style.top = "50%";
   img.style.left = "-150px";
   img.style.width = "100px";
+  img.style.zIndex = "1000";
   document.body.appendChild(img);
   let x = -150;
   const move = setInterval(() => {
     x += 5;
     img.style.left = x + "px";
-    if (x > window.innerWidth + 150) { clearInterval(move); img.remove(); }
+    if (x > window.innerWidth + 150) {
+      clearInterval(move);
+      img.remove();
+    }
   }, 30);
   new Audio("rickroll.mp3").play();
 }
 
-// === Init ===
+// === INIT ===
 window.onload = () => {
   detectUIMode();
   loadTheme();
   updateAccountMenu();
+  document.getElementById("chat-container").style.display = "none";
 };
