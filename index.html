@@ -10,9 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body class="dark ui-pc">
-  <!-- 🌌 Space Background and Intro Animations (handled in CSS and JS) -->
-
-  <!-- 🌍 Earth & Moon injected by JS -->
+  <!-- 🌌 Animated Intro and Earth/Moon handled by JS and CSS -->
 
   <!-- 🚀 Main Interface -->
   <div id="main-ui">
@@ -22,33 +20,33 @@
       <button onclick="joinRoomPrompt()">Join Room</button>
       <button onclick="showGroupMenu()">Join Group Chat</button>
       <button onclick="startTutorial()">Tutorial</button>
-      <button onclick="showSettings()">Settings</button>
+      <button onclick="toggleTheme()">Settings / Theme</button>
     </div>
 
-    <!-- 🔽 Account Menu -->
+    <!-- 👤 Account Dropdown -->
     <div class="dropdown" style="position:absolute;top:10px;right:10px;">
       <button class="dropbtn" onclick="toggleAccountMenu()">👤 Account</button>
       <div class="dropdown-content" id="account-dropdown" style="display:none;"></div>
     </div>
 
-    <!-- 🔽 Friends Menu -->
+    <!-- 👥 Friends Dropdown -->
     <div class="dropdown" style="position:absolute;top:10px;right:120px;">
       <button class="dropbtn" onclick="toggleFriendsMenu()">👥 Friends</button>
       <div class="dropdown-content" id="friends-dropdown" style="display:none;"></div>
     </div>
-
-    <!-- 💬 Chat Section -->
-    <div id="chat-container">
-      <div id="chat-box"></div>
-      <input type="text" id="chat-input" placeholder="Type a message..." />
-      <button onclick="sendMessage()">Send</button>
-    </div>
   </div>
 
-  <!-- 🪟 Modals, Game Iframes, etc. -->
+  <!-- 💬 Chat Container (hidden by default) -->
+  <div id="chat-container" style="display: none;">
+    <div id="chat-box"></div>
+    <input type="text" id="chat-input" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <!-- 🪟 Modal Container -->
   <div id="modal-container"></div>
 
-  <!-- 📜 Script -->
+  <!-- 📜 App Logic -->
   <script src="app.js"></script>
 </body>
 </html>
