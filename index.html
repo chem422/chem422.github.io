@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chem Chat 1.9</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico" />
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body class="dark ui-pc">
-  <div id="main-ui">
-    <h1>Chem Chat 1.9</h1>
+  <!-- 🌌 Space Background and Intro Animations (handled in CSS and JS) -->
 
-    <!-- Main Buttons -->
+  <!-- 🌍 Earth & Moon injected by JS -->
+
+  <!-- 🚀 Main Interface -->
+  <div id="main-ui">
+    <h1>🚀 Chem Chat 1.9</h1>
     <div id="menu-buttons">
       <button onclick="startRoomChat()">Start Room Chat</button>
       <button onclick="joinRoomPrompt()">Join Room</button>
@@ -21,17 +25,19 @@
       <button onclick="showSettings()">Settings</button>
     </div>
 
-    <!-- Dropdown Menus -->
+    <!-- 🔽 Account Menu -->
     <div class="dropdown" style="position:absolute;top:10px;right:10px;">
       <button class="dropbtn" onclick="toggleAccountMenu()">👤 Account</button>
       <div class="dropdown-content" id="account-dropdown" style="display:none;"></div>
     </div>
+
+    <!-- 🔽 Friends Menu -->
     <div class="dropdown" style="position:absolute;top:10px;right:120px;">
       <button class="dropbtn" onclick="toggleFriendsMenu()">👥 Friends</button>
       <div class="dropdown-content" id="friends-dropdown" style="display:none;"></div>
     </div>
 
-    <!-- Chat Box -->
+    <!-- 💬 Chat Section -->
     <div id="chat-container">
       <div id="chat-box"></div>
       <input type="text" id="chat-input" placeholder="Type a message..." />
@@ -39,10 +45,10 @@
     </div>
   </div>
 
-  <!-- Modal System -->
+  <!-- 🪟 Modals, Game Iframes, etc. -->
   <div id="modal-container"></div>
 
-  <!-- App Script -->
+  <!-- 📜 Script -->
   <script src="app.js"></script>
 </body>
 </html>
