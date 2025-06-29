@@ -1,102 +1,169 @@
-/* === Base Layout === */
+/* === Reset + Body === */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  overflow-x: hidden;
   transition: background 0.3s, color 0.3s;
+  overflow-x: hidden;
 }
 
-/* === Dark & Light Themes === */
+/* === Themes === */
 body.dark {
-  background: linear-gradient(to bottom, #000015, #001);
-  color: #fff;
+  background: radial-gradient(ellipse at top, #000014 0%, #000010 100%);
+  color: white;
 }
 body.light {
-  background: #f4f4f4;
+  background: #f0f0f0;
   color: #111;
 }
 
-/* === Buttons and Inputs === */
-button, input {
+/* === PC & Mobile UI Classes === */
+body.ui-pc {
+  font-size: 16px;
+  padding: 20px;
+}
+body.ui-mobile {
+  font-size: 15px;
+  padding: 10px;
+}
+
+/* === Heading === */
+h1 {
+  text-align: center;
+  font-size: 2em;
+}
+
+/* === Buttons & Inputs === */
+button, input[type="text"], input[type="password"] {
   font-family: inherit;
+  font-size: 16px;
   border: none;
-  border-radius: 25px;
-  padding: 10px 16px;
+  border-radius: 8px;
+  padding: 10px 14px;
   margin: 5px;
-  font-size: 14px;
+  box-sizing: border-box;
+}
+button {
   background: #222;
-  color: #fff;
-  transition: background 0.2s, transform 0.2s;
+  color: white;
   cursor: pointer;
+  transition: background 0.2s;
 }
 button:hover {
   background: #444;
-  transform: scale(1.05);
 }
-input[type="text"], input[type="password"] {
+input {
   background: #111;
-  border: 1px solid #333;
-  color: #fff;
-  border-radius: 10px;
+  color: white;
+  width: calc(100% - 24px);
+}
+
+/* === Main Menu Layout === */
+#menu-buttons {
+  text-align: center;
+  margin-bottom: 20px;
+}
+#menu-buttons button {
+  margin: 10px;
+}
+
+/* === Dropdown Menus === */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropbtn {
+  background: #1a1a2a;
+  color: white;
   padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #111;
+  min-width: 160px;
+  border-radius: 10px;
+  z-index: 1000;
+  padding: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.dropdown-content button {
+  display: block;
+  width: 100%;
+  margin: 6px 0;
+  background: #222;
+}
+
+/* === Chat UI === */
+#chat-container {
+  text-align: center;
+  margin-top: 20px;
+}
+#chat-box {
   width: 90%;
-  margin-bottom: 10px;
+  max-width: 600px;
+  height: 250px;
+  margin: 0 auto 10px auto;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #0c0c18;
+  overflow-y: auto;
+  padding: 10px;
+}
+#chat-input {
+  width: 70%;
+}
+#chat-container button {
+  width: 20%;
 }
 
 /* === Modal === */
-.modal {
-  background: #111822;
-  color: #eee;
-  max-width: 500px;
-  width: 90%;
-  margin: 10vh auto;
-  padding: 20px;
-  border-radius: 20px;
-  box-shadow: 0 0 25px rgba(0, 200, 255, 0.2);
-}
 #modal-container {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
   background: rgba(0,0,0,0.4);
-  z-index: 999;
-}
-#modal-space {
   z-index: 9999;
 }
-
-/* === Dropdowns === */
-.dropbtn {
-  background: #1a1a2f;
-  border-radius: 10px;
-  padding: 8px 14px;
-  font-weight: bold;
-}
-.dropdown-content {
-  background-color: #111;
-  border-radius: 10px;
-  padding: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  position: absolute;
-  z-index: 1000;
-}
-.dropdown {
-  position: relative;
-  display: inline-block;
+.modal {
+  background: #1b1b2f;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 500px;
+  margin: 10vh auto;
+  color: white;
+  text-align: center;
 }
 
-/* === File Upload Drop Zone === */
-#upload-preview {
-  font-size: 13px;
-  margin-top: 8px;
-  color: #aaa;
+/* === Rainbow Easter Egg === */
+@keyframes rainbow-bg {
+  0% { background-color: red; }
+  20% { background-color: orange; }
+  40% { background-color: yellow; }
+  60% { background-color: green; }
+  80% { background-color: blue; }
+  100% { background-color: violet; }
 }
-#file-drop-input {
-  display: none;
+body.rainbow {
+  animation: rainbow-bg 2s linear infinite;
 }
-#modal-container .modal div[style*="dashed"] {
-  background: rgba(255,255,255,0.03);
-  transition: border 0.2s ease;
+
+/* === Floating Earth & Moon Icons === */
+img[alt="Earth"], img[alt="Moon"] {
+  position: fixed;
+  cursor: pointer;
+  z-index: 100;
+}
+img[alt="Earth"] {
+  bottom: 20px;
+  left: 20px;
+  width: 60px;
+}
+img[alt="Moon"] {
+  bottom: 100px;
+  left: 60px;
+  width: 40px;
 }
 
 /* === Scrollbars === */
@@ -111,92 +178,17 @@ input[type="text"], input[type="password"] {
   background: transparent;
 }
 
-/* === Floating Earth and Moon === */
-img[alt="Earth"], img[alt="Moon"] {
-  position: fixed;
-  cursor: pointer;
-  z-index: 900;
-}
-img[alt="Earth"] {
-  bottom: 20px;
-  left: 20px;
-  width: 60px;
-}
-img[alt="Moon"] {
-  bottom: 100px;
-  left: 60px;
-  width: 40px;
-}
-
-/* === Chat UI === */
-#chat-box {
-  border: 1px solid #333;
-  background: #0b0b16;
-  border-radius: 12px;
-  padding: 8px;
-  margin: 10px auto;
-  overflow-y: auto;
-  max-height: 250px;
-  width: 90%;
-}
-#chat-box p {
-  margin: 5px 0;
-}
-
-/* === Friend Request Popups === */
-.friend-request-popup {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #111;
-  padding: 10px 15px;
-  border-radius: 15px;
-  box-shadow: 0 0 10px rgba(255,255,255,0.1);
-  z-index: 10000;
-  font-size: 14px;
-}
-
-/* === Rainbow Mode === */
-@keyframes rainbow-bg {
-  0%   { background-color: red; }
-  20%  { background-color: orange; }
-  40%  { background-color: yellow; }
-  60%  { background-color: green; }
-  80%  { background-color: blue; }
-  100% { background-color: violet; }
-}
-.rainbow {
-  animation: rainbow-bg 3s linear infinite;
-}
-
-/* === Responsive Mobile Support === */
+/* === Responsive Mobile Adjustments === */
 @media (max-width: 600px) {
-  body {
-    font-size: 16px;
-    padding: 0 5px;
-  }
-  .modal {
-    width: 95%;
-    margin: 5vh auto;
-    padding: 15px;
+  #chat-box {
+    max-height: 200px;
   }
   button, input {
     font-size: 16px;
-    width: 100%;
-    box-sizing: border-box;
+    width: 95%;
+    margin: 6px auto;
   }
-  .dropbtn {
-    width: 100%;
-    margin-bottom: 5px;
-  }
-  #chat-box {
-    max-height: 200px;
-    font-size: 14px;
-  }
-  .friend-request-popup {
-    right: 5%;
-    left: 5%;
+  .modal {
     width: 90%;
-    font-size: 15px;
   }
 }
