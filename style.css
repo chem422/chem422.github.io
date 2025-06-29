@@ -1,22 +1,22 @@
-/* === Reset + Body === */
+/* === Base Reset === */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  transition: background 0.3s, color 0.3s;
   overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* === Themes === */
+/* === Theme === */
 body.dark {
-  background: radial-gradient(ellipse at top, #000014 0%, #000010 100%);
+  background: radial-gradient(ellipse at top, #000014, #000010);
   color: white;
 }
 body.light {
-  background: #f0f0f0;
+  background: #f9f9f9;
   color: #111;
 }
 
-/* === PC & Mobile UI Classes === */
+/* === UI Mode === */
 body.ui-pc {
   font-size: 16px;
   padding: 20px;
@@ -26,10 +26,10 @@ body.ui-mobile {
   padding: 10px;
 }
 
-/* === Heading === */
+/* === Header === */
 h1 {
   text-align: center;
-  font-size: 2em;
+  font-size: 2rem;
 }
 
 /* === Buttons & Inputs === */
@@ -39,7 +39,7 @@ button, input[type="text"], input[type="password"] {
   border: none;
   border-radius: 8px;
   padding: 10px 14px;
-  margin: 5px;
+  margin: 6px;
   box-sizing: border-box;
 }
 button {
@@ -57,10 +57,10 @@ input {
   width: calc(100% - 24px);
 }
 
-/* === Main Menu Layout === */
+/* === Menu Buttons === */
 #menu-buttons {
   text-align: center;
-  margin-bottom: 20px;
+  margin: 20px 0;
 }
 #menu-buttons button {
   margin: 10px;
@@ -149,7 +149,7 @@ body.rainbow {
   animation: rainbow-bg 2s linear infinite;
 }
 
-/* === Floating Earth & Moon Icons === */
+/* === Floating Earth/Moon Icons === */
 img[alt="Earth"], img[alt="Moon"] {
   position: fixed;
   cursor: pointer;
@@ -178,7 +178,7 @@ img[alt="Moon"] {
   background: transparent;
 }
 
-/* === Responsive Mobile Adjustments === */
+/* === Responsive Fix === */
 @media (max-width: 600px) {
   #chat-box {
     max-height: 200px;
