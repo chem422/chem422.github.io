@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, onValue, push } from "firebase/database";
 
-// Firebase setup
 const firebaseConfig = {
   apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
   authDomain: "chat-room-22335.firebaseapp.com",
@@ -16,8 +15,9 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 let roomCode = "";
-let scene, camera, renderer, raycaster, player, keys = {};
-let chatVisible = false;
+let scene, camera, renderer, raycaster;
+let keys = {}, chatVisible = false;
+const voxels = [];
 
 document.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
@@ -28,20 +28,30 @@ document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 document.getElementById('chat-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     const msg = e.target.value;
-    push(ref(db, `rooms/${roomCode}/chat`), msg);
-    e.target.value = '';
+    if (msg.length > 0) {
+      push(ref(db, `rooms/${roomCode}/chat`), { text: msg });
+      e.target.value = '';
+    }
   }
 });
 
 function toggleChat() {
   chatVisible = !chatVisible;
-  document.getElementById('chat-container').style.display = chatVisible ? 'block' : 'none';
+  document.getElementById('chat-box').style.display = chatVisible ? 'block' : 'none';
 }
 
-function startRoom(create) {
-  roomCode = document.getElementById('room-code').value;
-  if (!roomCode) return alert("Room code required");
-  document.getElementById('room-ui').style.display = 'none';
+function startRoom(isCreate) {
+  const input = document.getElementById('room-input');
+  roomCode = input.value.trim();
+  if (!roomCode) return alert("Enter a room code!");
+
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('game-container').style.display = 'block';
+
+  if (isCreate) {
+    set(ref(db, `rooms/${roomCode}`), { created: Date.now() });
+  }
+
   initGame();
   listenChat();
 }
@@ -49,47 +59,28 @@ function startRoom(create) {
 function listenChat() {
   const log = document.getElementById('chat-log');
   onValue(ref(db, `rooms/${roomCode}/chat`), snapshot => {
-    log.innerHTML = '';
     const data = snapshot.val();
-    if (data) Object.values(data).forEach(msg => {
-      log.innerHTML += `<div>${msg}</div>`;
-    });
+    log.innerHTML = '';
+    if (data) {
+      Object.values(data).forEach(entry => {
+        log.innerHTML += `<div>> ${entry.text}</div>`;
+      });
+    }
   });
 }
 
 function initGame() {
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 2, 5);
+
   renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas') });
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   raycaster = new THREE.Raycaster();
-  player = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-  scene.add(player);
 
-  // Ground
+  // green voxel land
+  const voxelMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
   for (let x = -10; x <= 10; x++) {
     for (let z = -10; z <= 10; z++) {
-      const voxel = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial({ color: 0x00aa00 }));
-      voxel.position.set(x, -1, z);
-      scene.add(voxel);
-    }
-  }
-
-  camera.position.y = 2;
-  animate();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  handleMovement();
-  renderer.render(scene, camera);
-}
-
-function handleMovement() {
-  if (keys['w']) camera.position.z -= 0.1;
-  if (keys['s']) camera.position.z += 0.1;
-  if (keys['a']) camera.position.x -= 0.1;
-  if (keys['d']) camera.position.x += 0.1;
-  if (keys[' ']) camera.position.y += 0.1;
-}
+      const box = new THREE.Mesh(new THREE.BoxGeometry(1,1
