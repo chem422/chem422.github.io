@@ -83,4 +83,45 @@ function initGame() {
   const voxelMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
   for (let x = -10; x <= 10; x++) {
     for (let z = -10; z <= 10; z++) {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(1,1
+      const box = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), voxelMat);
+      box.position.set(x, -1, z);
+      scene.add(box);
+      voxels.push(box);
+    }
+  }
+
+  document.addEventListener('mousedown', e => {
+    const add = e.button === 0;
+    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+    const intersects = raycaster.intersectObjects(voxels);
+    if (intersects.length) {
+      const hit = intersects[0].object;
+      if (!add) {
+        scene.remove(hit);
+        voxels.splice(voxels.indexOf(hit), 1);
+      } else {
+        const newBox = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), voxelMat);
+        newBox.position.copy(hit.position).add(new THREE.Vector3(1,0,0));
+        scene.add(newBox);
+        voxels.push(newBox);
+      }
+    }
+  });
+
+  animate();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  handleMovement();
+  renderer.render(scene, camera);
+}
+
+function handleMovement() {
+  const speed = 0.1;
+  if (keys['w']) camera.position.z -= speed;
+  if (keys['s']) camera.position.z += speed;
+  if (keys['a']) camera.position.x -= speed;
+  if (keys['d']) camera.position.x += speed;
+  if (keys[' ']) camera.position.y += speed;
+}
