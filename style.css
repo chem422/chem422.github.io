@@ -1,35 +1,40 @@
 body {
   margin: 0;
   overflow: hidden;
-  font-family: sans-serif;
-  background: #000;
+  font-family: monospace;
+  background: black;
 }
 
-#room-ui {
+#menu {
   position: absolute;
-  top: 10px;
-  left: 10px;
   z-index: 10;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 12px;
   border-radius: 8px;
+  color: white;
 }
 
-#chat-container {
+#game-container {
+  display: none;
+}
+
+#chat-box {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 10;
+  bottom: 20px;
+  left: 20px;
   background: rgba(0,0,0,0.7);
   padding: 10px;
   display: none;
   width: 300px;
   color: white;
+  z-index: 10;
 }
 
 #chat-log {
   height: 150px;
-  overflow-y: scroll;
+  overflow-y: auto;
   margin-bottom: 5px;
   font-size: 14px;
 }
