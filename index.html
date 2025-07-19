@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VoxelVerse</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="room-ui">
+  <div id="menu">
+    <input id="room-input" placeholder="Enter Room Code" />
     <button onclick="startRoom(true)">Create Room</button>
     <button onclick="startRoom(false)">Join Room</button>
-    <input id="room-code" placeholder="Enter room code"/>
   </div>
 
-  <canvas id="game-canvas"></canvas>
-
-  <div id="chat-container">
-    <div id="chat-log"></div>
-    <input id="chat-input" placeholder="Type a message..." />
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="chat-box">
+      <div id="chat-log"></div>
+      <input id="chat-input" placeholder="Type message..." />
+    </div>
   </div>
 
   <script type="module" src="main.js"></script>
