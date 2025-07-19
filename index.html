@@ -1,52 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chem Chat 1.9</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="favicon.ico" />
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <meta charset="UTF-8">
+  <title>VoxelVerse</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="dark ui-pc">
-  <!-- 🌌 Animated Intro and Earth/Moon handled by JS and CSS -->
-
-  <!-- 🚀 Main Interface -->
-  <div id="main-ui">
-    <h1>🚀 Chem Chat 1.9</h1>
-    <div id="menu-buttons">
-      <button onclick="startRoomChat()">Start Room Chat</button>
-      <button onclick="joinRoomPrompt()">Join Room</button>
-      <button onclick="showGroupMenu()">Join Group Chat</button>
-      <button onclick="startTutorial()">Tutorial</button>
-      <button onclick="toggleTheme()">Settings / Theme</button>
-    </div>
-
-    <!-- 👤 Account Dropdown -->
-    <div class="dropdown" style="position:absolute;top:10px;right:10px;">
-      <button class="dropbtn" onclick="toggleAccountMenu()">👤 Account</button>
-      <div class="dropdown-content" id="account-dropdown" style="display:none;"></div>
-    </div>
-
-    <!-- 👥 Friends Dropdown -->
-    <div class="dropdown" style="position:absolute;top:10px;right:120px;">
-      <button class="dropbtn" onclick="toggleFriendsMenu()">👥 Friends</button>
-      <div class="dropdown-content" id="friends-dropdown" style="display:none;"></div>
-    </div>
+<body>
+  <div id="room-ui">
+    <button onclick="startRoom(true)">Create Room</button>
+    <button onclick="startRoom(false)">Join Room</button>
+    <input id="room-code" placeholder="Enter room code"/>
   </div>
 
-  <!-- 💬 Chat Container (hidden by default) -->
-  <div id="chat-container" style="display: none;">
-    <div id="chat-box"></div>
-    <input type="text" id="chat-input" placeholder="Type a message..." />
-    <button onclick="sendMessage()">Send</button>
+  <canvas id="game-canvas"></canvas>
+
+  <div id="chat-container">
+    <div id="chat-log"></div>
+    <input id="chat-input" placeholder="Type a message..." />
   </div>
 
-  <!-- 🪟 Modal Container -->
-  <div id="modal-container"></div>
-
-  <!-- 📜 App Logic -->
-  <script src="app.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
