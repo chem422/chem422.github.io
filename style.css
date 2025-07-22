@@ -1,40 +1,37 @@
 body {
-  margin: 0;
-  overflow: hidden;
-  font-family: monospace;
-  background: black;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  background-color: #0f0f0f;
+  color: #0ff078;
+  padding: 40px;
 }
 
-#menu {
-  position: absolute;
-  z-index: 10;
-  top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 12px;
-  border-radius: 8px;
+.button-group button {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 1.2em;
+  background-color: #28a745;
+  border: none;
+  border-radius: 5px;
   color: white;
+  cursor: pointer;
 }
 
-#game-container {
-  display: none;
+#hidden-button {
+  position: fixed;
+  bottom: 5px;
+  right: 5px;
+  width: 10px;
+  height: 10px;
+  background-color: transparent;
 }
 
-#chat-box {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  display: none;
-  width: 300px;
-  color: white;
-  z-index: 10;
+#secret-menu {
+  margin-top: 30px;
 }
 
-#chat-log {
-  height: 150px;
-  overflow-y: auto;
-  margin-bottom: 5px;
-  font-size: 14px;
+input[type="text"] {
+  padding: 8px;
+  font-size: 1em;
+  width: 250px;
 }
