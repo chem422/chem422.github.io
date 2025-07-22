@@ -1,127 +1,45 @@
-import * as THREE from 'three';
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, onValue, push } from "firebase/database";
+let hiddenClickCount = 0;
+let postRickrollUnlocked = false;
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC_BX4N_7gO3tGZvGh_4MkHOQ2Ay2mRsRc",
-  authDomain: "chat-room-22335.firebaseapp.com",
-  databaseURL: "https://chat-room-22335-default-rtdb.firebaseio.com",
-  projectId: "chat-room-22335",
-  storageBucket: "chat-room-22335.appspot.com",
-  messagingSenderId: "20974926341",
-  appId: "1:20974926341:web:8e03564116b082cb03fa6c"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+function rickRoll() {
+  window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+}
 
-let roomCode = "";
-let scene, camera, renderer, raycaster;
-let keys = {}, chatVisible = false;
-const voxels = [];
-
-document.addEventListener('keydown', e => {
-  keys[e.key.toLowerCase()] = true;
-  if (e.key.toLowerCase() === 't') toggleChat();
-});
-document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-document.getElementById('chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const msg = e.target.value;
-    if (msg.length > 0) {
-      push(ref(db, `rooms/${roomCode}/chat`), { text: msg });
-      e.target.value = '';
-    }
+function handleCoreClick(coreCount) {
+  if (coreCount === 10) {
+    const file = new Blob(
+      ['<html><head><meta http-equiv="refresh" content="0; URL=https://youtu.be/dQw4w9WgXcQ"></head></html>'],
+      { type: 'text/html' }
+    );
+    const downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(file);
+    downloadLink.download = "more_cores.html";
+    downloadLink.click();
+  } else if (coreCount === 50) {
+    alert("Yes.");
+  } else if (coreCount === 20000) {
+    alert("4060-4385-4535-1204");
   }
-});
-
-function toggleChat() {
-  chatVisible = !chatVisible;
-  document.getElementById('chat-box').style.display = chatVisible ? 'block' : 'none';
 }
 
-function startRoom(isCreate) {
-  const input = document.getElementById('room-input');
-  roomCode = input.value.trim();
-  if (!roomCode) return alert("Enter a room code!");
-
-  document.getElementById('menu').style.display = 'none';
-  document.getElementById('game-container').style.display = 'block';
-
-  if (isCreate) {
-    set(ref(db, `rooms/${roomCode}`), { created: Date.now() });
+function tapSecret() {
+  hiddenClickCount++;
+  if (hiddenClickCount === 5) {
+    document.getElementById("secret-menu").style.display = "block";
   }
-
-  initGame();
-  listenChat();
 }
 
-function listenChat() {
-  const log = document.getElementById('chat-log');
-  onValue(ref(db, `rooms/${roomCode}/chat`), snapshot => {
-    const data = snapshot.val();
-    log.innerHTML = '';
-    if (data) {
-      Object.values(data).forEach(entry => {
-        log.innerHTML += `<div>> ${entry.text}</div>`;
-      });
-    }
-  });
-}
-
-function initGame() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 2, 5);
-
-  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas') });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  raycaster = new THREE.Raycaster();
-
-  // green voxel land
-  const voxelMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  for (let x = -10; x <= 10; x++) {
-    for (let z = -10; z <= 10; z++) {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), voxelMat);
-      box.position.set(x, -1, z);
-      scene.add(box);
-      voxels.push(box);
-    }
+function verifyCode() {
+  const input = document.getElementById("code-input").value.trim();
+  if (input === "4060-4385-4535-1204") {
+    window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    postRickrollUnlocked = true;
+  } else if (
+    postRickrollUnlocked &&
+    input.startsWith("4060-4385-4535-1204-")
+  ) {
+    alert("Welcome, " + input.split("-").slice(-1)[0]);
+  } else {
+    alert("Invalid code.");
   }
-
-  document.addEventListener('mousedown', e => {
-    const add = e.button === 0;
-    raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-    const intersects = raycaster.intersectObjects(voxels);
-    if (intersects.length) {
-      const hit = intersects[0].object;
-      if (!add) {
-        scene.remove(hit);
-        voxels.splice(voxels.indexOf(hit), 1);
-      } else {
-        const newBox = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), voxelMat);
-        newBox.position.copy(hit.position).add(new THREE.Vector3(1,0,0));
-        scene.add(newBox);
-        voxels.push(newBox);
-      }
-    }
-  });
-
-  animate();
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  handleMovement();
-  renderer.render(scene, camera);
-}
-
-function handleMovement() {
-  const speed = 0.1;
-  if (keys['w']) camera.position.z -= speed;
-  if (keys['s']) camera.position.z += speed;
-  if (keys['a']) camera.position.x -= speed;
-  if (keys['d']) camera.position.x += speed;
-  if (keys[' ']) camera.position.y += speed;
 }
