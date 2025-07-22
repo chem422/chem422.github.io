@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>VoxelVerse</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Download More CPU and RAM</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="menu">
-    <input id="room-input" placeholder="Enter Room Code" />
-    <button onclick="startRoom(true)">Create Room</button>
-    <button onclick="startRoom(false)">Join Room</button>
+  <h1>Download More CPU Cores and RAM — Not a Virus 😇</h1>
+  <div class="button-group">
+    <button onclick="handleCoreClick(10)">🟢 10 Cores</button>
+    <button onclick="handleCoreClick(50)">🟢 50 Cores</button>
+    <button onclick="handleCoreClick(20000)">🟢 20,000 Cores</button>
+    <button onclick="rickRoll()">🟢 5GB RAM</button>
+    <button onclick="rickRoll()">🟢 10GB RAM</button>
+    <button onclick="rickRoll()">🟢 100GB RAM</button>
   </div>
 
-  <div id="game-container">
-    <canvas id="game-canvas"></canvas>
-    <div id="chat-box">
-      <div id="chat-log"></div>
-      <input id="chat-input" placeholder="Type message..." />
-    </div>
+  <div id="hidden-button" onclick="tapSecret()" title="secret"></div>
+
+  <div id="secret-menu" style="display:none;">
+    <input type="text" id="code-input" placeholder="Enter code">
+    <button onclick="verifyCode()">Submit</button>
   </div>
 
-  <script type="module" src="main.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
