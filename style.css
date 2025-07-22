@@ -1,8 +1,8 @@
 body {
   font-family: 'Segoe UI', sans-serif;
   text-align: center;
-  background-color: #0f0f0f;
-  color: #0ff078;
+  background-color: #ffffff; /* White background */
+  color: #333333; /* Dark text for contrast */
   padding: 40px;
 }
 
