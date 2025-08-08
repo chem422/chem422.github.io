@@ -232,27 +232,32 @@
                         const iconData = readerIcon.result;
                         for (let i = 0; i < gameFiles.length; i++) {
                             const gameFile = gameFiles[i];
-                            // Placeholder GitHub URL (replace with actual API upload result)
-                            const downloadUrl = `https://raw.githubusercontent.com/your-username/game-platform-files/main/uploads/${gameFile.name}`;
+                            // Placeholder GitHub URL (replace with actual URL after uploading to GitHub)
+                            const downloadUrl = `https://raw.githubusercontent.com/your-username/game-platform-files/main/uploads/${encodeURIComponent(gameFile.name)}`;
                             /*
-                            To upload to GitHub, use the API:
-                            - Get a Personal Access Token (PAT) with 'repo' scope.
-                            - Send a PUT request to /repos/{owner}/{repo}/contents/uploads/{file.name}
-                            - Body: { "message": "Upload game file", "content": base64(file) }
-                            - Example:
-                              const response = await fetch('https://api.github.com/repos/your-username/game-platform-files/contents/uploads/${gameFile.name}', {
+                            To upload to GitHub programmatically:
+                            1. Create a Personal Access Token (PAT) with 'repo' scope in GitHub settings.
+                            2. Use the GitHub API to upload files to your repository.
+                            3. Example API call (requires a backend to avoid exposing PAT):
+                              const response = await fetch(`https://api.github.com/repos/your-username/game-platform-files/contents/uploads/${encodeURIComponent(gameFile.name)}`, {
                                 method: 'PUT',
                                 headers: {
-                                  'Authorization': 'Bearer YOUR_PAT',
+                                  'Authorization': `Bearer YOUR_PAT`,
                                   'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify({
-                                  message: 'Upload game file',
+                                  message: `Upload ${gameFile.name}`,
                                   content: btoa(await gameFile.text()) // Base64 encode
                                 })
                               });
-                              const downloadUrl = response.json().content.download_url;
-                            Note: Exposing PAT in client-side code is insecure. Use a backend proxy.
+                              const downloadUrl = (await response.json()).content.download_url;
+                            4. For security, handle API calls via a backend proxy (e.g., Node.js server).
+                            5. Manually upload files to GitHub for testing:
+                               - Go to your repository (e.g., game-platform-files).
+                               - Navigate to 'uploads/' folder, click 'Add file' > 'Upload files'.
+                               - Upload the game file and icon.
+                               - Copy the raw URL from the uploaded file (right-click 'Download' > Copy link).
+                               - Replace the placeholder downloadUrl with the actual URL.
                             */
                             if (gameFile.type === 'text/html' && gameFile.size < 1024 * 1024) {
                                 const readerFile = new FileReader();
@@ -283,6 +288,7 @@
                         }
                         localStorage.setItem('games', JSON.stringify(games));
                         displayGames();
+                        alert('Games uploaded locally. To enable downloads, upload game files to your GitHub repository and update downloadUrl with the raw GitHub URLs.');
                         document.getElementById('uploadModal').classList.remove('open');
                         document.getElementById('uploadForm').reset();
                     } catch (error) {
@@ -316,9 +322,9 @@
                 document.getElementById('detailsDescription').textContent = game.description;
                 document.getElementById('detailsDownload').href = game.downloadUrl || '#';
                 document.getElementById('detailsDownload').onclick = (e) => {
-                    if (!game.downloadUrl) {
+                    if (!game.downloadUrl || game.downloadUrl.includes('your-username')) {
                         e.preventDefault();
-                        alert('Download not available: File must be uploaded to GitHub repository.');
+                        alert('Download not available: Please upload the game file to your GitHub repository and update the downloadUrl with the raw GitHub URL.');
                     }
                 };
                 document.getElementById('detailsPlay').onclick = () => {
