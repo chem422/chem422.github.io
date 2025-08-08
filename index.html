@@ -67,7 +67,7 @@
             <h2 class="text-2xl font-bold mb-6 text-gray-800">Upload Your Games</h2>
             <form id="uploadForm">
                 <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Game Files (.exe or .html)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Game Files (.exe or .html, max 25MB for GitHub hosting)</label>
                     <input type="file" id="gameFiles" accept=".exe,.html" multiple class="mt-1 block w-full border-gray-300 rounded-md p-2 border">
                 </div>
                 <div class="mb-5">
@@ -100,7 +100,7 @@
             <img id="detailsIcon" class="w-40 h-40 object-cover mb-4 rounded mx-auto" alt="Game Icon">
             <p id="detailsDescription" class="text-gray-600 mb-6"></p>
             <div class="flex justify-between mb-4">
-                <a id="detailsDownload" href="#" download class="bg-green-500 text-white px-4 py-2 rounded-lg opacity-50 cursor-not-allowed" title="Download not available: File storage requires a server backend">Download</a>
+                <a id="detailsDownload" href="#" download class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600" title="Download the game file">Download</a>
                 <button id="detailsPlay" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Play in Browser</button>
             </div>
             <div class="flex justify-between">
@@ -203,11 +203,17 @@
                     return;
                 }
 
-                // Validate file types
+                // Validate file types and size (25MB limit for GitHub)
                 for (let i = 0; i < gameFiles.length; i++) {
                     const file = gameFiles[i];
                     if (!['text/html', 'application/x-msdownload'].includes(file.type) && !file.name.endsWith('.exe') && !file.name.endsWith('.html')) {
                         alert(`Invalid file type for ${file.name}. Only .exe and .html files are allowed.`);
+                        uploadButton.disabled = false;
+                        uploadSpinner.style.display = 'none';
+                        return;
+                    }
+                    if (file.size > 25 * 1024 * 1024) {
+                        alert(`File ${file.name} exceeds 25MB, which is GitHub's limit for web uploads.`);
                         uploadButton.disabled = false;
                         uploadSpinner.style.display = 'none';
                         return;
@@ -226,7 +232,29 @@
                         const iconData = readerIcon.result;
                         for (let i = 0; i < gameFiles.length; i++) {
                             const gameFile = gameFiles[i];
-                            if (gameFile.type === 'text/html' && gameFile.size < 1024 * 1024) { // Limit HTML file size to 1MB
+                            // Placeholder GitHub URL (replace with actual API upload result)
+                            const downloadUrl = `https://raw.githubusercontent.com/your-username/game-platform-files/main/uploads/${gameFile.name}`;
+                            /*
+                            To upload to GitHub, use the API:
+                            - Get a Personal Access Token (PAT) with 'repo' scope.
+                            - Send a PUT request to /repos/{owner}/{repo}/contents/uploads/{file.name}
+                            - Body: { "message": "Upload game file", "content": base64(file) }
+                            - Example:
+                              const response = await fetch('https://api.github.com/repos/your-username/game-platform-files/contents/uploads/${gameFile.name}', {
+                                method: 'PUT',
+                                headers: {
+                                  'Authorization': 'Bearer YOUR_PAT',
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                  message: 'Upload game file',
+                                  content: btoa(await gameFile.text()) // Base64 encode
+                                })
+                              });
+                              const downloadUrl = response.json().content.download_url;
+                            Note: Exposing PAT in client-side code is insecure. Use a backend proxy.
+                            */
+                            if (gameFile.type === 'text/html' && gameFile.size < 1024 * 1024) {
                                 const readerFile = new FileReader();
                                 await new Promise((resolve, reject) => {
                                     readerFile.onload = () => {
@@ -235,7 +263,8 @@
                                             description: gameDescription,
                                             icon: iconData,
                                             file: gameFile.name,
-                                            content: readerFile.result
+                                            content: readerFile.result,
+                                            downloadUrl
                                         });
                                         resolve();
                                     };
@@ -247,7 +276,8 @@
                                     title: gameTitle,
                                     description: gameDescription,
                                     icon: iconData,
-                                    file: gameFile.name
+                                    file: gameFile.name,
+                                    downloadUrl
                                 });
                             }
                         }
@@ -284,10 +314,12 @@
                 document.getElementById('detailsTitle').textContent = game.title;
                 document.getElementById('detailsIcon').src = game.icon;
                 document.getElementById('detailsDescription').textContent = game.description;
-                document.getElementById('detailsDownload').href = game.file;
+                document.getElementById('detailsDownload').href = game.downloadUrl || '#';
                 document.getElementById('detailsDownload').onclick = (e) => {
-                    e.preventDefault();
-                    alert('Download not available: This is a demo. Actual file downloads require a server backend to store and serve the files.');
+                    if (!game.downloadUrl) {
+                        e.preventDefault();
+                        alert('Download not available: File must be uploaded to GitHub repository.');
+                    }
                 };
                 document.getElementById('detailsPlay').onclick = () => {
                     if (game.content && game.file.endsWith('.html')) {
