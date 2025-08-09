@@ -1,367 +1,393 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Upload & Download</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        #uploadModal, #gameDetailsModal {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #uploadModal.open, #gameDetailsModal.open {
-            display: flex;
-            opacity: 1;
-        }
-        .game-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-    </style>
+  <title>Duck Hunt Rocket Launcher</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(#87CEEB, #4682B4); }
+    canvas { border: 2px solid #333; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    .hud { position: absolute; top: 10px; left: 10px; right: 10px; color: white; font-family: 'Press Start 2P', cursive; font-size: 14px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+    .score { position: absolute; top: 10px; right: 20px; font-size: 20px; }
+  </style>
 </head>
-<body class="bg-gray-50 font-sans min-h-screen">
-    <!-- Header -->
-    <header class="bg-blue-600 text-white p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Game Platform</h1>
-            <div class="text-sm">Upload & Share Your Games</div>
-        </div>
-    </header>
+<body>
+<div class="hud">
+  <div>Duck Hunt: Rocket Frenzy</div>
+  <div style="font-size: 10px; margin-top: 5px;">Click to shoot | Hit power-ups for boosts!</div>
+</div>
+<script>
+let ducks = [];
+let rockets = [];
+let explosions = [];
+let scoreTexts = [];
+let powerUps = [];
+let score = 0;
+let ctx;
+let speedBoost = false;
+let multiShot = false;
+let bigRocket = false;
+let scoreMultiplier = false;
+let rapidFire = false;
+let boostTimer = 0;
+let fireDelay = 0;
+const baseFireDelay = 10;
 
-    <!-- Main Container -->
-    <div class="container mx-auto p-6">
-        <!-- Upload Button -->
-        <div class="flex justify-center mb-8">
-            <button id="openUploadModal" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-200">Upload Games</button>
-        </div>
+function setup() {
+  createCanvas(800, 600);
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  for (let i = 0; i < 8; i++) {
+    spawnDuck();
+  }
+  setInterval(spawnPowerUp, 10000);
+}
 
-        <!-- Games Grid -->
-        <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
-    </div>
-
-    <!-- Upload Modal -->
-    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-xl w-full max-w-lg shadow-2xl">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">Upload Your Games</h2>
-            <form id="uploadForm">
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Game Files (.exe or .html, max 25MB)</label>
-                    <input type="file" id="gameFiles" accept=".exe,.html" multiple class="mt-1 block w-full border-gray-300 rounded-md p-2 border">
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Icon (.png)</label>
-                    <input type="file" id="gameIcon" accept=".png" class="mt-1 block w-full border-gray-300 rounded-md p-2 border">
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                    <input type="text" id="gameTitle" class="mt-1 block w-full border-gray-300 rounded-md p-2 border" required>
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea id="gameDescription" class="mt-1 block w-full border-gray-300 rounded-md p-2 border" rows="4" required></textarea>
-                </div>
-                <div class="flex justify-end items-center">
-                    <button type="button" id="closeUploadModal" class="mr-3 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
-                    <button type="submit" id="uploadButton" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
-                        <span>Load</span>
-                        <div id="uploadSpinner" class="spinner ml-2"></div>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Game Details Modal -->
-    <div id="gameDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-xl w-full max-w-lg shadow-2xl">
-            <h2 id="detailsTitle" class="text-2xl font-bold mb-4 text-gray-800"></h2>
-            <img id="detailsIcon" class="w-40 h-40 object-cover mb-4 rounded mx-auto" alt="Game Icon">
-            <p id="detailsDescription" class="text-gray-600 mb-6"></p>
-            <div class="flex justify-between mb-4">
-                <a id="detailsDownload" href="#" download class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600" title="Download the game file">Download</a>
-                <button id="detailsPlay" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Play in Browser</button>
-            </div>
-            <div class="flex justify-between">
-                <button id="deleteGame" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Delete Game</button>
-                <button id="closeDetailsModal" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Simulated storage for games
-        let games = JSON.parse(localStorage.getItem('games')) || [];
-
-        // Backend endpoint (update to your deployed backend URL)
-        const BACKEND_URL = 'http://localhost:3000/upload-to-github';
-
-        // Function to display games
-        function displayGames() {
-            try {
-                const gamesGrid = document.getElementById('gamesGrid');
-                gamesGrid.innerHTML = '';
-                games.forEach((game, index) => {
-                    const gameCard = document.createElement('div');
-                    gameCard.className = 'game-card bg-white p-5 rounded-xl shadow-lg cursor-pointer relative';
-                    gameCard.innerHTML = `
-                        <img src="${game.icon}" alt="${game.title}" class="w-32 h-32 object-cover mx-auto mb-3 rounded-lg">
-                        <h3 class="text-lg font-semibold text-center text-gray-800">${game.title}</h3>
-                        <button class="delete-game absolute top-2 right-2 text-red-500 hover:text-red-700" data-index="${index}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    `;
-                    gameCard.querySelector('.delete-game').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteGame(index);
-                    });
-                    gameCard.addEventListener('click', (e) => {
-                        if (!e.target.closest('.delete-game')) showGameDetails(index);
-                    });
-                    gamesGrid.appendChild(gameCard);
-                });
-            } catch (error) {
-                console.error('Error displaying games:', error);
-                alert('Failed to display games. Please try again.');
-            }
+function draw() {
+  // Gradient background
+  let c1 = color(135, 206, 235);
+  let c2 = color(70, 130, 180);
+  for (let y = 0; y < height; y++) {
+    let n = map(y, 0, height, 0, 1);
+    let newColor = lerpColor(c1, c2, n);
+    stroke(newColor);
+    line(0, y, width, y);
+  }
+  // Update boost timer
+  if (speedBoost || multiShot || bigRocket || scoreMultiplier || rapidFire) {
+    boostTimer--;
+    if (boostTimer <= 0) {
+      speedBoost = false;
+      multiShot = false;
+      bigRocket = false;
+      scoreMultiplier = false;
+      rapidFire = false;
+    }
+  }
+  // Update fire delay
+  if (fireDelay > 0) fireDelay--;
+  // Draw and update ducks
+  for (let i = ducks.length - 1; i >= 0; i--) {
+    let duck = ducks[i];
+    duck.update();
+    duck.show();
+    if (duck.offScreen()) {
+      ducks.splice(i, 1);
+      spawnDuck();
+    }
+  }
+  // Draw and update rockets
+  for (let i = rockets.length - 1; i >= 0; i--) {
+    let rocket = rockets[i];
+    rocket.update();
+    rocket.show();
+    if (rocket.offScreen()) {
+      rockets.splice(i, 1);
+    } else {
+      // Check duck collisions
+      for (let j = ducks.length - 1; j >= 0; j--) {
+        if (rocket.hits(ducks[j])) {
+          explosions.push(new Explosion(ducks[j].x, ducks[j].y));
+          playExplosionSound();
+          score += scoreMultiplier ? 20 : 10;
+          scoreTexts.push(new ScoreText(ducks[j].x, ducks[j].y));
+          ducks.splice(j, 1);
+          rockets.splice(i, 1);
+          spawnDuck();
+          break;
         }
-
-        // Delete game
-        function deleteGame(index) {
-            try {
-                if (confirm('Are you sure you want to delete this game?')) {
-                    games.splice(index, 1);
-                    localStorage.setItem('games', JSON.stringify(games));
-                    displayGames();
-                    document.getElementById('gameDetailsModal').classList.remove('open');
-                }
-            } catch (error) {
-                console.error('Error deleting game:', error);
-                alert('Failed to delete game. Please try again.');
-            }
+      }
+      // Check power-up collisions
+      for (let j = powerUps.length - 1; j >= 0; j--) {
+        if (rocket.hits(powerUps[j])) {
+          activatePowerUp(powerUps[j].type);
+          playPowerUpSound();
+          powerUps.splice(j, 1);
+          break;
         }
+      }
+    }
+  }
+  // Draw and update explosions
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    explosions[i].update();
+    explosions[i].show();
+    if (explosions[i].isDone()) {
+      explosions.splice(i, 1);
+    }
+  }
+  // Draw and update score texts
+  for (let i = scoreTexts.length - 1; i >= 0; i--) {
+    scoreTexts[i].update();
+    scoreTexts[i].show();
+    if (scoreTexts[i].isDone()) {
+      scoreTexts.splice(i, 1);
+    }
+  }
+  // Draw and update power-ups
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    powerUps[i].update();
+    powerUps[i].show();
+    if (powerUps[i].offScreen()) {
+      powerUps.splice(i, 1);
+    }
+  }
+  // Draw rocket launcher
+  fill(80);
+  rect(mouseX - 25, height - 50, 50, 30, 5);
+  fill(200, 50, 50);
+  triangle(mouseX - 15, height - 50, mouseX + 15, height - 50, mouseX, height - 70);
+  fill(0, 255, 0);
+  rect(mouseX - 25, height - 20, 50, 10);
+  // Draw score
+  push();
+  textFont('Press Start 2P');
+  fill(255);
+  stroke(0);
+  strokeWeight(3);
+  textSize(20);
+  textAlign(RIGHT);
+  text(`Score: ${score}`, width - 10, 30);
+  pop();
+  // Draw power-up status
+  if (speedBoost || multiShot || bigRocket || scoreMultiplier || rapidFire) {
+    fill(255, 255, 0);
+    textSize(12);
+    textAlign(LEFT);
+    let powerName = speedBoost ? 'Speed' : multiShot ? 'Multi' : bigRocket ? 'Big' : scoreMultiplier ? '2x Score' : 'Rapid';
+    text(`Power: ${powerName} (${floor(boostTimer/60)}s)`, 10, 50);
+  }
+}
 
-        // Open upload modal
-        document.getElementById('openUploadModal').addEventListener('click', () => {
-            try {
-                document.getElementById('uploadModal').classList.add('open');
-            } catch (error) {
-                console.error('Error opening upload modal:', error);
-                alert('Failed to open upload modal. Please try again.');
-            }
-        });
+function mousePressed() {
+  if (fireDelay > 0) return;
+  if (multiShot) {
+    rockets.push(new Rocket(mouseX - 20, height - 50));
+    rockets.push(new Rocket(mouseX, height - 50));
+    rockets.push(new Rocket(mouseX + 20, height - 50));
+  } else {
+    rockets.push(new Rocket(mouseX, height - 50));
+  }
+  fireDelay = rapidFire ? baseFireDelay / 2 : baseFireDelay;
+}
 
-        // Close upload modal
-        document.getElementById('closeUploadModal').addEventListener('click', () => {
-            try {
-                document.getElementById('uploadModal').classList.remove('open');
-                document.getElementById('uploadForm').reset();
-            } catch (error) {
-                console.error('Error closing upload modal:', error);
-                alert('Failed to close upload modal. Please try again.');
-            }
-        });
+class Duck {
+  constructor() {
+    this.size = random(20, 50);
+    this.x = -this.size;
+    this.y = random(50, height - 100);
+    this.speed = random(2, 6);
+    this.color = color(random(100, 255), random(100, 255), random(100, 255));
+    this.phase = random(TWO_PI);
+  }
+  update() {
+    this.x += this.speed;
+    this.y += sin(this.x * 0.05 + this.phase) * 0.5;
+  }
+  show() {
+    push();
+    translate(this.x, this.y);
+    fill(this.color);
+    ellipse(0, 0, this.size, this.size * 0.6);
+    ellipse(-this.size * 0.3, -this.size * 0.2, this.size * 0.4, this.size * 0.4);
+    fill(this.color, 200);
+    ellipse(-this.size * 0.2, 0, this.size * 0.5, this.size * 0.3);
+    ellipse(this.size * 0.2, 0, this.size * 0.5, this.size * 0.3);
+    fill(0);
+    ellipse(-this.size * 0.2, -this.size * 0.2, 5, 5);
+    fill(255, 165, 0);
+    triangle(
+      this.size * 0.2, 0,
+      this.size * 0.4, -5,
+      this.size * 0.4, 5
+    );
+    pop();
+  }
+  offScreen() {
+    return this.x > width + this.size;
+  }
+}
 
-        // Handle form submission
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const uploadButton = document.getElementById('uploadButton');
-            const uploadSpinner = document.getElementById('uploadSpinner');
-            uploadButton.disabled = true;
-            uploadSpinner.style.display = 'block';
+class Rocket {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.speed = speedBoost ? -15 : -10;
+    this.size = bigRocket ? 15 : 10;
+  }
+  update() {
+    this.y += this.speed;
+  }
+  show() {
+    push();
+    translate(this.x, this.y);
+    fill(169, 169, 169);
+    rect(-this.size/2, -this.size, this.size, this.size * 2, 3);
+    fill(255, 0, 0);
+    triangle(-this.size/2, -this.size, this.size/2, -this.size, 0, -this.size * 2);
+    fill(255, 255, 0);
+    ellipse(0, this.size, this.size/2, this.size);
+    pop();
+  }
+  offScreen() {
+    return this.y < -this.size * 2;
+  }
+  hits(obj) {
+    let d = dist(this.x, this.y, obj.x, obj.y);
+    return d < obj.size / 2 + this.size;
+  }
+}
 
-            try {
-                const gameFiles = document.getElementById('gameFiles').files;
-                const gameIcon = document.getElementById('gameIcon').files[0];
-                const gameTitle = document.getElementById('gameTitle').value.trim();
-                const gameDescription = document.getElementById('gameDescription').value.trim();
+class Explosion {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.particles = [];
+    for (let i = 0; i < 30; i++) {
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: random(-4, 4),
+        vy: random(-4, 4),
+        alpha: 255,
+        size: random(5, 20),
+        color: random() > 0.5 ? color(255, 100, 0) : color(255, 255, 0)
+      });
+    }
+  }
+  update() {
+    for (let p of this.particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha -= 4;
+      p.size *= 0.97;
+    }
+  }
+  show() {
+    noStroke();
+    for (let p of this.particles) {
+      fill(p.color, p.alpha);
+      ellipse(p.x, p.y, p.size);
+    }
+  }
+  isDone() {
+    return this.particles[0].alpha <= 0;
+  }
+}
 
-                if (gameFiles.length === 0 || !gameIcon || !gameTitle || !gameDescription) {
-                    alert('Please fill in all fields and select at least one game file (.exe or .html) and a .png icon.');
-                    uploadButton.disabled = false;
-                    uploadSpinner.style.display = 'none';
-                    return;
-                }
+class ScoreText {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.alpha = 255;
+    this.vy = -1.5;
+  }
+  update() {
+    this.y += this.vy;
+    this.alpha -= 3;
+  }
+  show() {
+    push();
+    textFont('Press Start 2P');
+    fill(255, 255, 0, this.alpha);
+    stroke(0);
+    strokeWeight(2);
+    textSize(18);
+    text(`+${scoreMultiplier ? 20 : 10}`, this.x, this.y);
+    pop();
+  }
+  isDone() {
+    return this.alpha <= 0;
+  }
+}
 
-                // Validate file types and size (25MB limit for GitHub)
-                for (let i = 0; i < gameFiles.length; i++) {
-                    const file = gameFiles[i];
-                    if (!['text/html', 'application/x-msdownload'].includes(file.type) && !file.name.endsWith('.exe') && !file.name.endsWith('.html')) {
-                        alert(`Invalid file type for ${file.name}. Only .exe and .html files are allowed.`);
-                        uploadButton.disabled = false;
-                        uploadSpinner.style.display = 'none';
-                        return;
-                    }
-                    if (file.size > 25 * 1024 * 1024) {
-                        alert(`File ${file.name} exceeds 25MB, which is GitHub's limit for uploads.`);
-                        uploadButton.disabled = false;
-                        uploadSpinner.style.display = 'none';
-                        return;
-                    }
-                }
-                if (gameIcon.type !== 'image/png') {
-                    alert('Invalid icon file type. Only .png files are allowed.');
-                    uploadButton.disabled = false;
-                    uploadSpinner.style.display = 'none';
-                    return;
-                }
+class PowerUp {
+  constructor() {
+    this.x = -20;
+    this.y = random(50, height - 100);
+    this.size = 20;
+    this.speed = random(1, 3);
+    let r = random();
+    this.type = r < 0.25 ? 'speed' : r < 0.5 ? 'multi' : r < 0.75 ? 'big' : 'score';
+    this.type = r < 0.2 ? 'speed' : r < 0.4 ? 'multi' : r < 0.6 ? 'big' : r < 0.8 ? 'score' : 'rapid';
+  }
+  update() {
+    this.x += this.speed;
+  }
+  show() {
+    push();
+    translate(this.x, this.y);
+    let c = this.type === 'speed' ? color(0, 255, 255) : 
+            this.type === 'multi' ? color(255, 0, 255) : 
+            this.type === 'big' ? color(255, 165, 0) : 
+            this.type === 'score' ? color(255, 255, 0) : color(0, 255, 0);
+    fill(c);
+    ellipse(0, 0, this.size);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(12);
+    text(this.type === 'speed' ? 'S' : this.type === 'multi' ? 'M' : this.type === 'big' ? 'B' : this.type === 'score' ? 'X' : 'R', 0, 0);
+    pop();
+  }
+  offScreen() {
+    return this.x > width + this.size;
+  }
+}
 
-                // Read icon as data URL for local storage
-                const readerIcon = new FileReader();
-                readerIcon.onload = async () => {
-                    try {
-                        const iconData = readerIcon.result;
+function activatePowerUp(type) {
+  speedBoost = false;
+  multiShot = false;
+  bigRocket = false;
+  scoreMultiplier = false;
+  rapidFire = false;
+  if (type === 'speed') {
+    speedBoost = true;
+  } else if (type === 'multi') {
+    multiShot = true;
+  } else if (type === 'big') {
+    bigRocket = true;
+  } else if (type === 'score') {
+    scoreMultiplier = true;
+  } else if (type === 'rapid') {
+    rapidFire = true;
+  }
+  boostTimer = 300; // 5 seconds at 60 FPS
+}
 
-                        // Upload icon to GitHub
-                        const iconFormData = new FormData();
-                        iconFormData.append('gameFile', gameIcon);
-                        const iconResponse = await fetch(BACKEND_URL, {
-                            method: 'POST',
-                            body: iconFormData
-                        });
-                        const iconResult = await iconResponse.json();
-                        if (!iconResponse.ok) throw new Error(iconResult.error || 'Failed to upload icon');
+function playExplosionSound() {
+  let oscillator = ctx.createOscillator();
+  let gainNode = ctx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  oscillator.type = 'square';
+  oscillator.frequency.setValueAtTime(100, ctx.currentTime);
+  gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+  oscillator.start();
+  oscillator.stop(ctx.currentTime + 0.5);
+}
 
-                        for (let i = 0; i < gameFiles.length; i++) {
-                            const gameFile = gameFiles[i];
+function playPowerUpSound() {
+  let oscillator = ctx.createOscillator();
+  let gainNode = ctx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+  gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+  oscillator.start();
+  oscillator.stop(ctx.currentTime + 0.3);
+}
 
-                            // Upload game file to GitHub
-                            const formData = new FormData();
-                            formData.append('gameFile', gameFile);
-                            const response = await fetch(BACKEND_URL, {
-                                method: 'POST',
-                                body: formData
-                            });
-                            const result = await response.json();
-                            if (!response.ok) throw new Error(result.error || `Failed to upload ${gameFile.name}`);
+function spawnDuck() {
+  ducks.push(new Duck());
+}
 
-                            if (gameFile.type === 'text/html' && gameFile.size < 1024 * 1024) {
-                                const readerFile = new FileReader();
-                                await new Promise((resolve, reject) => {
-                                    readerFile.onload = () => {
-                                        games.push({
-                                            title: gameTitle,
-                                            description: gameDescription,
-                                            icon: iconData,
-                                            file: gameFile.name,
-                                            content: readerFile.result,
-                                            downloadUrl: result.downloadUrl
-                                        });
-                                        resolve();
-                                    };
-                                    readerFile.onerror = () => reject(new Error(`Failed to read file: ${gameFile.name}`));
-                                    readerFile.readAsDataURL(gameFile);
-                                });
-                            } else {
-                                games.push({
-                                    title: gameTitle,
-                                    description: gameDescription,
-                                    icon: iconData,
-                                    file: gameFile.name,
-                                    downloadUrl: result.downloadUrl
-                                });
-                            }
-                        }
-                        localStorage.setItem('games', JSON.stringify(games));
-                        displayGames();
-                        document.getElementById('uploadModal').classList.remove('open');
-                        document.getElementById('uploadForm').reset();
-                    } catch (error) {
-                        console.error('Error processing upload:', error);
-                        alert('Failed to upload games. Ensure the backend server is running and try again.');
-                    } finally {
-                        uploadButton.disabled = false;
-                        uploadSpinner.style.display = 'none';
-                    }
-                };
-                readerIcon.onerror = () => {
-                    alert('Failed to read icon file. Please select a valid .png file.');
-                    uploadButton.disabled = false;
-                    uploadSpinner.style.display = 'none';
-                };
-                readerIcon.readAsDataURL(gameIcon);
-            } catch (error) {
-                console.error('Error during upload:', error);
-                alert('An error occurred during upload. Please try again.');
-                uploadButton.disabled = false;
-                uploadSpinner.style.display = 'none';
-            }
-        });
-
-        // Show game details
-        function showGameDetails(index) {
-            try {
-                const game = games[index];
-                document.getElementById('detailsTitle').textContent = game.title;
-                document.getElementById('detailsIcon').src = game.icon;
-                document.getElementById('detailsDescription').textContent = game.description;
-                document.getElementById('detailsDownload').href = game.downloadUrl || '#';
-                document.getElementById('detailsDownload').onclick = (e) => {
-                    if (!game.downloadUrl) {
-                        e.preventDefault();
-                        alert('Download not available: File upload to GitHub failed or backend is not running.');
-                    }
-                };
-                document.getElementById('detailsPlay').onclick = () => {
-                    if (game.content && game.file.endsWith('.html')) {
-                        try {
-                            const newTab = window.open();
-                            if (newTab) {
-                                newTab.document.write(game.content.replace('data:text/html;base64,', 'data:text/html;charset=utf-8,'));
-                            } else {
-                                alert('Failed to open new tab. Please allow pop-ups and try again.');
-                            }
-                        } catch (error) {
-                            console.error('Error playing HTML game:', error);
-                            alert('Failed to play game in browser. Please try again.');
-                        }
-                    } else {
-                        alert('Playing .exe files in the browser is not supported. Please download the game to play.');
-                    }
-                };
-                document.getElementById('deleteGame').onclick = () => deleteGame(index);
-                document.getElementById('gameDetailsModal').classList.add('open');
-            } catch (error) {
-                console.error('Error showing game details:', error);
-                alert('Failed to show game details. Please try again.');
-            }
-        }
-
-        // Close game details modal
-        document.getElementById('closeDetailsModal').addEventListener('click', () => {
-            try {
-                document.getElementById('gameDetailsModal').classList.remove('open');
-            } catch (error) {
-                console.error('Error closing details modal:', error);
-                alert('Failed to close details modal. Please try again.');
-            }
-        });
-
-        // Initial display of games
-        displayGames();
-    </script>
+function spawnPowerUp() {
+  if (powerUps.length < 2) {
+    powerUps.push(new PowerUp());
+  }
+}
+</script>
 </body>
 </html>
