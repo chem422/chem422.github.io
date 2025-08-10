@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,6 +11,7 @@
     .score { position: absolute; top: 10px; right: 20px; font-size: 20px; }
     .game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; text-align: center; font-family: 'Press Start 2P', cursive; }
     .power-up-info { position: absolute; top: 40px; left: 10px; color: yellow; font-family: 'Press Start 2P', cursive; font-size: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+    .shop-button { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: yellow; font-family: 'Press Start 2P', cursive; font-size: 14px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -20,6 +20,7 @@
   <div style="font-size: 10px; margin-top: 5px;">Click to shoot | HP: <span id="player-hp">100</span></div>
   <div class="power-up-info" id="power-up-info"></div>
 </div>
+<div class="shop-button" id="shop-button">Shop</div>
 <script>
 let ducks = [];
 let rockets = [];
@@ -30,6 +31,8 @@ let drones = [];
 let boss = null;
 let score = 0;
 let playerHP = 100;
+let maxHP = 100;
+let hpUpgradeLevel = 0;
 let ctx;
 let gameOver = false;
 let bossDroneTimer = 0;
@@ -38,6 +41,7 @@ let activePowerUp = { type: null, timer: 0 };
 let duckImg, bossImg;
 let fireCooldown = 0;
 let powerUpSpawnInterval = 10000;
+let shopOpen = false;
 
 function preload() {
   try {
@@ -55,8 +59,18 @@ function setup() {
   for (let i = 0; i < 8; i++) {
     spawnDuck();
   }
-  setInterval(spawnPowerUp, powerUpSpawnInterval);
+  setInterval(spawnPowerUp, 10000);
   setInterval(spawnDrone, 10000);
+  document.getElementById('shop-button').addEventListener('click', toggleShop);
+}
+
+function toggleShop() {
+  shopOpen = !shopOpen;
+  if (shopOpen) {
+    document.getElementById('shop-button').textContent = 'Close Shop';
+  } else {
+    document.getElementById('shop-button').textContent = 'Shop';
+  }
 }
 
 function draw() {
@@ -73,24 +87,36 @@ function draw() {
     stroke(newColor);
     line(0, y, width, y);
   }
-  // Update power-up state
+  if (shopOpen) {
+    // Draw shop menu
+    fill(0, 0, 0, 200);
+    rect(width / 2 - 200, height / 2 - 150, 400, 300);
+    fill(255);
+    textFont('Press Start 2P');
+    textSize(16);
+    textAlign(CENTER);
+    text('Shop', width / 2, height / 2 - 120);
+    textSize(12);
+    text('HP Upgrade (' + (10 + 10 * hpUpgradeLevel) + ' points)', width / 2, height / 2 - 80);
+    text('HP Restore (10 points)', width / 2, height / 2 - 50);
+    text('Close', width / 2, height / 2 + 100);
+    return; // Pause game
+  }
+  // Update boost timer
   if (activePowerUp.timer > 0) {
     activePowerUp.timer--;
-    let seconds = ceil(activePowerUp.timer / 60);
-    document.getElementById('power-up-info').textContent = `${activePowerUp.type ? activePowerUp.type.charAt(0).toUpperCase() + activePowerUp.type.slice(1) : ''} (${seconds}s)`;
     if (activePowerUp.timer <= 0) {
-      resetPowerUp();
+      activePowerUp.type = null;
+      document.getElementById('power-up-info').textContent = '';
     }
   }
   // Check boss spawn
   if (score >= 100 && score % 100 === 0 && !boss) {
     boss = new BossDuck();
-    console.log('Boss spawned at score:', score);
   }
   // Draw and update ducks
   for (let i = ducks.length - 1; i >= 0; i--) {
     let duck = ducks[i];
-    if (!duck) continue;
     duck.update();
     duck.show();
     if (duck.offScreen()) {
@@ -101,7 +127,6 @@ function draw() {
   // Draw and update drones
   for (let i = drones.length - 1; i >= 0; i--) {
     let drone = drones[i];
-    if (!drone) continue;
     drone.update();
     drone.show();
     if (drone.offScreen()) {
@@ -113,7 +138,6 @@ function draw() {
       if (playerHP <= 0) {
         gameOver = true;
         playGameOverSound();
-        console.log('Game over: Player HP reached 0');
       }
     }
   }
@@ -123,42 +147,35 @@ function draw() {
     boss.show();
     bossDroneTimer++;
     if (bossDroneTimer >= 180) { // 3 seconds at 60 FPS
-      if (drones.length < 5) {
-        for (let i = 0; i < 4; i++) {
-          drones.push(new Drone(boss.x, boss.y));
-        }
-        console.log('Boss spawned 4 drones');
+      for (let i = 0; i < 4; i++) {
+        drones.push(new Drone(boss.x, boss.y));
       }
       bossDroneTimer = 0;
     }
     if (boss.hp <= 0) {
-      let bossPoints = activePowerUp.type === 'score' ? 200 : 100;
-      score += bossPoints;
+      score += 100;
       explosions.push(new Explosion(boss.x, boss.y));
       scoreTexts.push(new ScoreText(boss.x, boss.y));
       spawnPowerUp();
       spawnPowerUp();
       boss = null;
       bossDroneTimer = 0;
-      console.log('Boss defeated, score:', score);
     }
   }
   // Draw and update rockets
   for (let i = rockets.length - 1; i >= 0; i--) {
     let rocket = rockets[i];
-    if (!rocket) continue;
     rocket.update();
     rocket.show();
     if (rocket.offScreen()) {
       rockets.splice(i, 1);
     } else {
-      // Check duck collisions
+      // Check collisions with ducks
       for (let j = ducks.length - 1; j >= 0; j--) {
-        if (!ducks[j]) continue;
         if (rocket.hits(ducks[j])) {
           explosions.push(new Explosion(ducks[j].x, ducks[j].y));
           playExplosionSound();
-          score += activePowerUp.type === 'score' ? 20 : 10;
+          score += 10;
           scoreTexts.push(new ScoreText(ducks[j].x, ducks[j].y));
           ducks.splice(j, 1);
           rockets.splice(i, 1);
@@ -166,497 +183,88 @@ function draw() {
           break;
         }
       }
-      // Check drone collisions
+      // Check collisions with drones
       for (let j = drones.length - 1; j >= 0; j--) {
-        if (!drones[j]) continue;
         if (rocket.hits(drones[j])) {
           explosions.push(new Explosion(drones[j].x, drones[j].y));
           playDroneHitSound();
-          score += activePowerUp.type === 'score' ? 10 : 5;
+          score += 5;
           scoreTexts.push(new ScoreText(drones[j].x, drones[j].y));
           drones.splice(j, 1);
           rockets.splice(i, 1);
           break;
         }
       }
-      // Check boss collisions
+      // Check collisions with boss
       if (boss && rocket.hits(boss)) {
-        boss.hp -= activePowerUp.type === 'big' ? 10 : 5;
+        boss.hp -= 5;
         playBossHitSound();
         rockets.splice(i, 1);
       }
-      // Check power-up collisions
-      for (let j = powerUps.length - 1; j >= 0; j--) {
-        if (!powerUps[j]) continue;
-        if (rocket.hits(powerUps[j])) {
-          activatePowerUp(powerUps[j].type);
-          powerUps.splice(j, 1);
-          rockets.splice(i, 1);
-          break;
-        }
-      }
     }
   }
-  // Draw and update explosions (cap at 20)
-  if (explosions.length > 20) explosions.splice(0, explosions.length - 20);
+  // Draw and update explosions
   for (let i = explosions.length - 1; i >= 0; i--) {
-    let explosion = explosions[i];
-    if (!explosion) continue;
-    explosion.update();
-    explosion.show();
-    if (explosion.isDone()) {
+    explosions[i].update();
+    explosions[i].show();
+    if (explosions[i].isDone()) {
       explosions.splice(i, 1);
     }
   }
-  // Draw and update score texts (cap at 10)
-  if (scoreTexts.length > 10) scoreTexts.splice(0, scoreTexts.length - 10);
+  // Draw and update score texts
   for (let i = scoreTexts.length - 1; i >= 0; i--) {
-    let scoreText = scoreTexts[i];
-    if (!scoreText) continue;
-    scoreText.update();
-    scoreText.show();
-    if (scoreText.isDone()) {
+    scoreTexts[i].update();
+    scoreTexts[i].show();
+    if (scoreTexts[i].isDone()) {
       scoreTexts.splice(i, 1);
     }
   }
-  // Draw and update power-ups
+  // Draw and update power ups
   for (let i = powerUps.length - 1; i >= 0; i--) {
-    let powerUp = powerUps[i];
-    if (!powerUp) continue;
-    powerUp.update();
-    powerUp.show();
-    if (powerUp.offScreen()) {
+    powerUps[i].update();
+    powerUps[i].show();
+    if (powerUps[i].offScreen()) {
       powerUps.splice(i, 1);
     }
   }
   // Draw rocket launcher
-  fill(80);
-  rect(mouseX - 25, height - 50, 50, 30, 5);
-  fill(200, 50, 50);
-  triangle(mouseX - 15, height - 50, mouseX + 15, height - 50, mouseX, height - 70);
-  fill(0, 255, 0);
-  rect(mouseX - 25, height - 20, 50, 10);
-  // Draw player health bar
+  fill(100);
+  rect(mouseX - 20, height - 40, 40, 20);
   fill(255, 0, 0);
-  rect(mouseX - 25, height - 80, 50, 5);
-  fill(0, 255, 0);
-  rect(mouseX - 25, height - 80, 50 * (playerHP / 100), 5);
+  triangle(mouseX - 10, height - 40, mouseX + 10, height - 40, mouseX, height - 60);
   // Draw score
-  push();
-  textFont('Press Start 2P');
-  fill(255);
-  stroke(0);
-  strokeWeight(3);
+  fill(0);
   textSize(20);
-  textAlign(RIGHT);
-  text(`Score: ${score}`, width - 10, 30);
-  pop();
-  // Draw boss status
-  if (boss) {
-    fill(255, 0, 0);
-    textSize(12);
-    textAlign(CENTER);
-    text('Boss Fight!', width / 2, 50);
-  }
-  // Update firing cooldown
-  if (fireCooldown > 0) fireCooldown--;
+  text(`Score: ${score}`, 10, 30);
 }
 
 function mousePressed() {
-  if (gameOver) {
-    if (mouseX > width/2 - 100 && mouseX < width/2 + 100 && mouseY > height/2 + 20 && mouseY < height/2 + 60) {
-      resetGame();
+  if (shopOpen) {
+    // Check for shop purchases
+    if (mouseX > width / 2 - 200 && mouseX < width / 2 + 200 && mouseY > height / 2 - 100 && mouseY < height / 2 - 70) {
+      let price = 10 + 10 * hpUpgradeLevel;
+      if (score >= price) {
+        score -= price;
+        hpUpgradeLevel++;
+        maxHP += 20;
+        playerHP = maxHP;
+        document.getElementById('player-hp').textContent = playerHP;
+      }
+    } else if (mouseX > width / 2 - 200 && mouseX < width / 2 + 200 && mouseY > height / 2 - 70 && mouseY < height / 2 - 40) {
+      if (score >= 10) {
+        score -= 10;
+        playerHP = maxHP;
+        document.getElementById('player-hp').textContent = playerHP;
+      }
+    } else if (mouseX > width / 2 - 200 && mouseX < width / 2 + 200 && mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
+      shopOpen = false;
+      document.getElementById('shop-button').textContent = 'Shop';
     }
     return;
   }
-  if (fireCooldown <= 0) {
-    let cooldown = activePowerUp.type === 'rapid' ? 10 : 30;
-    fireCooldown = cooldown;
-    if (activePowerUp.type === 'multi') {
-      // Fire 4 rockets in a spread
-      rockets.push(new Rocket(mouseX - 20, height - 50));
-      rockets.push(new Rocket(mouseX - 10, height - 50));
-      rockets.push(new Rocket(mouseX + 10, height - 50));
-      rockets.push(new Rocket(mouseX + 20, height - 50));
-    } else {
-      rockets.push(new Rocket(mouseX, height - 50));
-    }
-  }
+  rockets.push(new Rocket(mouseX, height - 40));
 }
 
-function activatePowerUp(type) {
-  activePowerUp.type = type;
-  activePowerUp.timer = type === 'multi' ? 240 : type === 'more' ? 600 : 300; // 4s for multi, 10s for more, 5s for others
-  if (type === 'more') {
-    powerUpSpawnInterval = 5000; // Reduce spawn interval to 5 seconds
-    clearInterval(spawnPowerUpIntervalId);
-    spawnPowerUpIntervalId = setInterval(spawnPowerUp, powerUpSpawnInterval);
-  }
-}
-
-function resetPowerUp() {
-  activePowerUp = { type: null, timer: 0 };
-  document.getElementById('power-up-info').textContent = '';
-  if (powerUpSpawnInterval !== 10000) {
-    powerUpSpawnInterval = 10000;
-    clearInterval(spawnPowerUpIntervalId);
-    spawnPowerUpIntervalId = setInterval(spawnPowerUp, powerUpSpawnInterval);
-  }
-}
-
-function drawGameOver() {
-  gameOverDiv = document.createElement('div');
-  gameOverDiv.className = 'game-over';
-  gameOverDiv.innerHTML = `<h2>Game Over</h2><p>Final Score: ${score}</p><p>Click to Restart</p>`;
-  document.body.appendChild(gameOverDiv);
-}
-
-function resetGame() {
-  ducks = [];
-  rockets = [];
-  explosions = [];
-  scoreTexts = [];
-  powerUps = [];
-  drones = [];
-  boss = null;
-  score = 0;
-  playerHP = 100;
-  gameOver = false;
-  bossDroneTimer = 0;
-  activePowerUp = { type: null, timer: 0 };
-  fireCooldown = 0;
-  powerUpSpawnInterval = 10000;
-  clearInterval(spawnPowerUpIntervalId);
-  spawnPowerUpIntervalId = setInterval(spawnPowerUp, powerUpSpawnInterval);
-  document.getElementById('player-hp').textContent = playerHP;
-  document.getElementById('power-up-info').textContent = '';
-  for (let i = 0; i < 8; i++) {
-    spawnDuck();
-  }
-  if (gameOverDiv) {
-    gameOverDiv.remove();
-    gameOverDiv = null;
-  }
-}
-
-let spawnPowerUpIntervalId = setInterval(spawnPowerUp, powerUpSpawnInterval);
-
-class Duck {
-  constructor() {
-    this.size = random(20, 50);
-    this.x = -this.size;
-    this.y = random(50, height - 100);
-    this.speed = random(2, 6);
-    this.phase = random(TWO_PI);
-  }
-  update() {
-    this.x += this.speed;
-    this.y += sin(this.x * 0.05 + this.phase) * 0.5;
-  }
-  show() {
-    push();
-    translate(this.x, this.y);
-    if (duckImg) {
-      image(duckImg, -this.size/2, -this.size/2, this.size, this.size * 0.6);
-    } else {
-      fill(100, 150, 255);
-      ellipse(0, 0, this.size, this.size * 0.6);
-      ellipse(-this.size * 0.3, -this.size * 0.2, this.size * 0.4, this.size * 0.4);
-      fill(100, 150, 255, 200);
-      ellipse(-this.size * 0.2, 0, this.size * 0.5, this.size * 0.3);
-      ellipse(this.size * 0.2, 0, this.size * 0.5, this.size * 0.3);
-      fill(0);
-      ellipse(-this.size * 0.2, -this.size * 0.2, 5, 5);
-      fill(255, 165, 0);
-      triangle(this.size * 0.2, 0, this.size * 0.4, -5, this.size * 0.4, 5);
-    }
-    pop();
-  }
-  offScreen() {
-    return this.x > width + this.size;
-  }
-}
-
-class Drone {
-  constructor(x = random(0, width), y = -15) {
-    this.size = 15;
-    this.x = x;
-    this.y = y;
-    this.speed = random(3, 5);
-    this.angle = atan2(height - 50 - this.y, mouseX - this.x);
-  }
-  update() {
-    this.x += cos(this.angle) * this.speed;
-    this.y += sin(this.angle) * this.speed;
-  }
-  show() {
-    push();
-    translate(this.x, this.y);
-    fill(100, 100, 100, 200);
-    triangle(0, -this.size/2, -this.size/2, this.size/2, this.size/2, this.size/2);
-    fill(255, 0, 0);
-    ellipse(0, 0, 5);
-    pop();
-  }
-  offScreen() {
-    return this.y > height + this.size;
-  }
-  hitsPlayer() {
-    let d = dist(this.x, this.y, mouseX, height - 50);
-    return d < this.size / 2 + 25;
-  }
-}
-
-class BossDuck {
-  constructor() {
-    this.size = 80;
-    this.x = -this.size;
-    this.y = random(100, height - 100);
-    this.speed = 1.5;
-    this.hp = 50;
-    this.phase = random(TWO_PI);
-  }
-  update() {
-    this.x += this.speed;
-    this.y += sin(this.x * 0.03 + this.phase) * 1;
-  }
-  show() {
-    push();
-    translate(this.x, this.y);
-    if (bossImg) {
-      image(bossImg, -this.size/2, -this.size/2, this.size, this.size * 0.6);
-    } else {
-      fill(200, 50, 50);
-      ellipse(0, 0, this.size, this.size * 0.6);
-      ellipse(-this.size * 0.3, -this.size * 0.2, this.size * 0.4, this.size * 0.4);
-      fill(200, 50, 50, 200);
-      ellipse(-this.size * 0.2, 0, this.size * 0.5, this.size * 0.3);
-      ellipse(this.size * 0.2, 0, this.size * 0.5, this.size * 0.3);
-      fill(0);
-      ellipse(-this.size * 0.2, -this.size * 0.2, 8);
-      fill(255, 165, 0);
-      triangle(this.size * 0.2, 0, this.size * 0.4, -8, this.size * 0.4, 8);
-    }
-    fill(255, 0, 0);
-    rect(-50, -this.size - 10, 100, 5);
-    fill(0, 255, 0);
-    rect(-50, -this.size - 10, 100 * (this.hp / 50), 5);
-    pop();
-  }
-}
-
-class Rocket {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.speed = activePowerUp.type === 'speed' ? -15 : -10;
-    this.size = activePowerUp.type === 'big' ? 20 : 10;
-  }
-  update() {
-    this.y += this.speed;
-  }
-  show() {
-    push();
-    translate(this.x, this.y);
-    fill(169, 169, 169);
-    rect(-this.size/2, -this.size, this.size, this.size * 2, 3);
-    fill(255, 0, 0);
-    triangle(-this.size/2, -this.size, this.size/2, -this.size, 0, -this.size * 2);
-    fill(255, 255, 0);
-    ellipse(0, this.size, this.size/2, this.size);
-    pop();
-  }
-  offScreen() {
-    return this.y < -this.size * 2;
-  }
-  hits(obj) {
-    let d = dist(this.x, this.y, obj.x, obj.y);
-    return d < obj.size / 2 + this.size;
-  }
-}
-
-class Explosion {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.particles = [];
-    for (let i = 0; i < 30; i++) {
-      this.particles.push({
-        x: x,
-        y: y,
-        vx: random(-4, 4),
-        vy: random(-4, 4),
-        alpha: 255,
-        size: random(5, 20),
-        color: random() > 0.5 ? color(255, 100, 0) : color(255, 255, 0)
-      });
-    }
-  }
-  update() {
-    for (let p of this.particles) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.alpha -= 4;
-      p.size *= 0.97;
-    }
-  }
-  show() {
-    noStroke();
-    for (let p of this.particles) {
-      fill(p.color, p.alpha);
-      ellipse(p.x, p.y, p.size);
-    }
-  }
-  isDone() {
-    return this.particles[0].alpha <= 0;
-  }
-}
-
-class ScoreText {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.alpha = 255;
-    this.vy = -1.5;
-    this.points = boss && dist(x, y, boss.x, boss.y) < boss.size / 2 ? (activePowerUp.type === 'score' ? 200 : 100) : dist(x, y, boss ? boss.x : -999, boss ? boss.y : -999) > 100 ? (activePowerUp.type === 'score' ? 20 : 10) : (activePowerUp.type === 'score' ? 10 : 5);
-  }
-  update() {
-    this.y += this.vy;
-    this.alpha -= 3;
-  }
-  show() {
-    push();
-    textFont('Press Start 2P');
-    fill(255, 255, 0, this.alpha);
-    stroke(0);
-    strokeWeight(2);
-    textSize(18);
-    text(`+${this.points}`, this.x, this.y);
-    pop();
-  }
-  isDone() {
-    return this.alpha <= 0;
-  }
-}
-
-class PowerUp {
-  constructor() {
-    this.x = -20;
-    this.y = random(50, height - 100);
-    this.size = 20;
-    this.speed = random(1, 3);
-    let r = random();
-    this.type = r < 0.167 ? 'speed' : r < 0.333 ? 'multi' : r < 0.5 ? 'big' : r < 0.667 ? 'score' : r < 0.833 ? 'rapid' : 'more';
-  }
-  update() {
-    this.x += this.speed;
-  }
-  show() {
-    push();
-    translate(this.x, this.y);
-    let c = this.type === 'speed' ? color(0, 255, 255, 100) : 
-            this.type === 'multi' ? color(255, 0, 255, 100) : 
-            this.type === 'big' ? color(255, 165, 0, 100) : 
-            this.type === 'score' ? color(255, 255, 0, 100) : 
-            this.type === 'rapid' ? color(0, 255, 0, 100) : 
-            color(128, 0, 128, 100); // Purple for 'more'
-    fill(c);
-    ellipse(0, 0, this.size);
-    fill(255, 255, 255, 100);
-    textAlign(CENTER, CENTER);
-    textSize(12);
-    text(this.type === 'speed' ? 'S' : this.type === 'multi' ? 'M' : this.type === 'big' ? 'B' : this.type === 'score' ? 'X' : this.type === 'rapid' ? 'R' : 'P', 0, 0);
-    pop();
-  }
-  offScreen() {
-    return this.x > width + this.size;
-  }
-}
-
-function playExplosionSound() {
-  try {
-    let oscillator = ctx.createOscillator();
-    let gainNode = ctx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(100, ctx.currentTime);
-    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.5);
-  } catch (e) {
-    console.log('Audio error in playExplosionSound:', e);
-  }
-}
-
-function playDroneHitSound() {
-  try {
-    let oscillator = ctx.createOscillator();
-    let gainNode = ctx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.type = 'triangle';
-    oscillator.frequency.setValueAtTime(200, ctx.currentTime);
-    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.4);
-  } catch (e) {
-    console.log('Audio error in playDroneHitSound:', e);
-  }
-}
-
-function playBossHitSound() {
-  try {
-    let oscillator = ctx.createOscillator();
-    let gainNode = ctx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(150, ctx.currentTime);
-    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.6);
-  } catch (e) {
-    console.log('Audio error in playBossHitSound:', e);
-  }
-}
-
-function playGameOverSound() {
-  try {
-    let oscillator = ctx.createOscillator();
-    let gainNode = ctx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.type = 'sawtooth';
-    oscillator.frequency.setValueAtTime(200, ctx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 1);
-    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 1);
-  } catch (e) {
-    console.log('Audio error in playGameOverSound:', e);
-  }
-}
-
-function spawnDuck() {
-  ducks.push(new Duck());
-}
-
-function spawnDrone() {
-  if (drones.length < 5) {
-    drones.push(new Drone());
-  }
-}
-
-function spawnPowerUp() {
-  if (powerUps.length < 2) {
-    powerUps.push(new PowerUp());
-  }
-}
 </script>
 </body>
 </html>
